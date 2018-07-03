@@ -1,0 +1,24 @@
+{
+    "miners": [
+        {
+            "id": "miner1",
+            "privateKeyPath": null,
+            "host": "192.168.1.101",
+            "user": "user",
+            "password": "mypassword",
+            "startCommand": "/home/user/start.sh",
+            "stopCommand": null,
+            "logCommand": "awk '/: 0x/ {a=$0} END{print a}'  /home/ec2-user/mochi/bin/miner.log && awk '/Solved/ {a=$0} END{print a}'  /home/ec2-user/mochi/bin/miner.log"
+        },
+        {
+            "id": "miner2",
+            "privateKeyPath": null,
+            "host": "192.168.2.102",
+            "user": "user",
+            "password": "mypassword",
+            "startCommand": "/home/user/start.sh",
+            "stopCommand": null,
+            "logCommand": "awk '/: 0x/ {a=$0} END{print a}'  /home/ec2-user/mochi/bin/miner.log && awk '/Solved/ {a=$0} END{print a}'  /home/ec2-user/mochi/bin/miner.log"
+        }
+    ]
+}

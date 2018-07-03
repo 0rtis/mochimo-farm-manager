@@ -1,0 +1,219 @@
+<html>
+		<head>
+		<script type="text/javascript">
+			
+			document.title = "Mochimo Mining Farm"
+				
+			function loadMiners()
+			{
+				var xmlHttp = new XMLHttpRequest();
+				xmlHttp.open( "GET", location.origin+"/status", false); // false for synchronous request
+				xmlHttp.send( null );
+				var json = xmlHttp.response
+				
+				if(xmlHttp.status != 200)
+				{
+					document.getElementById("error").innerHTML=json
+					return
+				}
+				
+				var farm = JSON.parse(json);
+								
+				var totalHPS = document.getElementById("totalHPS");
+				totalHPS.innerHTML ="Total HPS: " + commafy(farm.totalHPS);
+				
+				var totalSolved = document.getElementById("totalSolved");
+				totalSolved.innerHTML ="Total Block Solved: " + commafy(farm.totalSolved);
+				
+				var solvingRate = document.getElementById("solvingRate");
+				solvingRate.innerHTML ="Solving Rate: " + (Math.round(farm.solvingRate * 100) / 100) + " %";
+				
+				var tbody=document.createElement('tbody');
+				
+				for(i=0;i<farm.miners.length;i++)
+				{
+				
+					var row = tbody.insertRow(tbody.rows.length);
+					var miner = farm.miners[i];
+					
+					var cell = row.insertCell(row.cells.length);
+					cell.innerHTML = '<a href="miner.html?refresh=5000&id='+miner.minerId+'" target="_blank">'+miner.minerId+'</a>';
+					cell.dataset.value = cell.innerHTML;
+					
+					if(miner.cpu<0)
+					{
+						continue
+					}
+					
+					var cell = row.insertCell(row.cells.length);
+					cell.innerHTML = Math.round(miner.cpu * 100) / 100
+					cell.dataset.value = parseFloat(cell.innerHTML);
+
+					var cell = row.insertCell(row.cells.length);
+					var processes = ""
+									
+					for(j=0;j<miner.processes.length;j++)
+						if(j == 0)
+							processes="["+miner.processes[j]+"]"
+						else						
+							processes+=", ["+miner.processes[j]+"]"
+													
+					cell.innerHTML = processes;
+					cell.dataset.value = cell.innerHTML;
+
+					var cell = row.insertCell(row.cells.length);
+					cell.innerHTML = miner.gomochi;
+					cell.dataset.value = cell.innerHTML;
+
+					var cell = row.insertCell(row.cells.length);
+					cell.innerHTML = miner.listen;
+					cell.dataset.value = cell.innerHTML;
+					
+					var cell = row.insertCell(row.cells.length);
+					cell.innerHTML = miner.solving;
+					cell.dataset.value = cell.innerHTML;
+					
+					var cell = row.insertCell(row.cells.length);
+					cell.innerHTML = miner.block;
+					cell.dataset.value = cell.innerHTML;
+					
+					var cell = row.insertCell(row.cells.length);
+					cell.innerHTML = miner.difficulty;
+					cell.dataset.value = cell.innerHTML;
+					
+					var cell = row.insertCell(row.cells.length);
+					cell.innerHTML = commafy(miner.hps);
+					cell.dataset.value = parseFloat(cell.innerHTML);
+					
+					var cell = row.insertCell(row.cells.length);
+					cell.innerHTML = miner.solved;
+					cell.dataset.value = parseFloat(cell.innerHTML);
+				}
+				
+				var table = document.getElementById("miner-table");
+				var previous_tbody = table.tBodies[0];
+				previous_tbody.parentNode.replaceChild(tbody, previous_tbody)
+				
+				
+				var url = new URL(window.location.href);
+				var refresh = url.searchParams.get("refresh");
+				if (refresh == null)
+				{		
+					refresh = 10000
+				}else 
+				{
+					refresh = parseInt(refresh)
+					if (isNaN(refresh) || refresh < 1)
+					{
+						refresh = 10000
+					}
+				}
+
+				setTimeout(loadMiners, refresh)
+			}
+			
+			window.onload=loadMiners;
+			
+			function commafy( num ) 
+			{
+				var str = num.toString().split('.');
+				if (str[0].length >= 5) {
+					str[0] = str[0].replace(/(\d)(?=(\d{3})+$)/g, '$1,');
+				}
+				if (str[1] && str[1].length >= 5) {
+					str[1] = str[1].replace(/(\d{3})/g, '$1 ');
+				}
+				return str.join('.');
+			}
+			
+			function sortTable(headerCell)
+			{
+			  var table = headerCell.parentNode.parentNode.parentNode;
+			  var colIndex = headerCell.cellIndex;
+			  var rows = [];
+			  var tbody = table.tBodies[0];
+			  if (tbody != null) {
+				for (var i = 0; i < tbody.rows.length; i++) {
+					rows.push(tbody.rows[i]);
+				}
+				if (headerCell.dataset.order == 'ascending') 
+				{
+					headerCell.dataset.order = 'descending';
+					rows.sort(function(row1, row2) { 
+							if(colIndex ==1 || colIndex ==7 || colIndex ==8)
+							{
+								return row2.cells[colIndex].dataset.value-row1.cells[colIndex].dataset.value;
+							}
+							else 
+							{
+								return row2.cells[colIndex].dataset.value.localeCompare(row1.cells[colIndex].dataset.value);
+							}
+				  });    
+				}
+				else {
+					rows.sort(function(row1, row2) { 
+						headerCell.dataset.order = 'ascending';
+						if(colIndex ==3 || colIndex ==9 || colIndex ==10)
+						{
+							return row1.cells[colIndex].dataset.value-row2.cells[colIndex].dataset.value;
+						}
+						else
+						{
+							return row1.cells[colIndex].dataset.value.localeCompare(row2.cells[colIndex].dataset.value);
+						}
+
+				  });
+				}
+				for (var i = 0; i < rows.length; i++) {
+					tbody.appendChild(rows[i]);
+				}
+			  }
+			}
+
+
+		</script>
+		<style>
+			table {
+				font-family: arial, sans-serif;
+				border-collapse: collapse;
+				width: 100%;
+			}
+
+			td, th {
+				border: 1px solid #dddddd;
+				text-align: left;
+				padding: 8px;
+			}
+
+			tr:nth-child(even) {
+				background-color: #dddddd;
+			}
+		</style>
+		</head>
+	<body>
+	
+	
+	<div id="error" style="color: red;height: 10px;margin-top:5px"></div>
+	<div id="totalHPS" style="margin-top: 5px"></div>
+	<div id="totalSolved" style="margin-top: 5px"></div>
+	<div id="solvingRate" style="margin-top: 5px"></div>
+		<table id="miner-table" style="margin-top: 10px">
+			<thead>
+				<tr>
+					<th onclick="sortTable(this);">Id</th>
+					<th onclick="sortTable(this);">CPU (%)</th>
+					<th onclick="sortTable(this);">Process</th>
+					<th onclick="sortTable(this);">Gomochi</th>
+					<th onclick="sortTable(this);">Listen</th>
+					<th onclick="sortTable(this);">Solving</th>
+					<th onclick="sortTable(this);">Block</th>
+					<th onclick="sortTable(this);">Diff</th>
+					<th onclick="sortTable(this);">HPS</th>
+					<th onclick="sortTable(this);">Solved</th>
+				</tr>
+			</thead>
+			<tbody>
+			</tbody>
+		</table>
+	</body>
+</html>

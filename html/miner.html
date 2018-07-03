@@ -1,0 +1,222 @@
+<html>
+		<head>
+		<script type="text/javascript">
+			var url = new URL(location);
+			var miner_id = url.searchParams.get("id");
+			document.title = "Miner " + miner_id
+			
+			function loadMiner()
+			{
+				var xmlHttp = new XMLHttpRequest();
+				xmlHttp.open( "GET", location.origin+"/miner"+location.search, false); // false for synchronous request
+				xmlHttp.send( null );
+				var json = xmlHttp.response
+				var json = xmlHttp.response
+				
+				if(xmlHttp.status != 200)
+				{
+					document.getElementById("error").innerHTML=json
+					return
+				}
+				
+				var miner = JSON.parse(json);
+											
+				var table = document.getElementById("miner-table"); 
+				var currentTBody = table.tBodies[0];
+				tbody = document.createElement('tbody');
+				
+			loop:for(i = 0;i<currentTBody.rows.length;i++)
+				{
+					var cell = tbody.insertRow(i).insertCell(tbody.rows[i].cells.length)
+					tbody.rows[i].cells[0].outerHTML = currentTBody.rows[i].cells[0].outerHTML;
+	
+					cell = tbody.rows[i].insertCell(tbody.rows[i].cells.length)
+					
+					if(i>0 && miner.cpu<0)
+					{
+						document.getElementById("startButton").disabled = true;
+						document.getElementById("stopButton").disabled = true;
+						document.getElementById("helper").innerHTML = "Waiting for statistics...";
+						
+						continue loop;
+					}else
+					{
+						document.getElementById("startButton").disabled = false;
+						document.getElementById("stopButton").disabled = false;
+						document.getElementById("helper").innerHTML = "";
+					}
+					
+					switch(i) 
+					{
+						case 0://Id
+							cell.innerHTML = miner.minerId;
+						break;
+												
+						case 1://CPU
+							cell.innerHTML = (Math.round(miner.cpu * 100) / 100) +"%"
+						break;
+
+						case 2://Process
+							var processes = ""
+							for(j=0;j<miner.processes.length;j++)
+								if(j == 0)
+									processes="["+miner.processes[j]+"]"
+								else						
+									processes+=", ["+miner.processes[j]+"]"
+							cell.innerHTML = processes
+						break;
+
+						case 3://Gomochi
+							cell.innerHTML = miner.gomochi
+						break;
+						
+						case 4://Listen
+							cell.innerHTML = miner.listen
+						break;
+						
+						case 5://Solving
+							cell.innerHTML = miner.solving
+						break;
+						
+						case 6://Block
+							cell.innerHTML = miner.block
+						break;
+						
+						case 7://Difficulty
+							cell.innerHTML = miner.difficulty
+						break;
+						
+						case 8://HPS
+							cell.innerHTML = commafy(miner.hps)
+						break;
+						
+						case 9://Solved
+							cell.innerHTML = miner.solved
+						break;
+						
+						default:
+							cell.innerHTML = "Error index"
+						break;
+					}
+					
+				}
+				
+				var table = document.getElementById("miner-table");
+				var currentTBody = table.tBodies[0];
+				currentTBody.parentNode.replaceChild(tbody, currentTBody)
+				
+				var url = new URL(window.location.href);
+				var refresh = url.searchParams.get("refresh");
+				if (refresh == null)
+				{		
+					refresh = 5000
+				}else 
+				{
+					refresh = parseInt(refresh)
+					if (isNaN(refresh) || refresh < 1)
+					{
+						refresh = 5000
+					}
+				}
+				
+				setTimeout(loadMiner, refresh)
+			}
+			
+			window.onload=loadMiner;
+		
+			function commafy( num ) 
+			{
+				var str = num.toString().split('.');
+				if (str[0].length >= 5) {
+					str[0] = str[0].replace(/(\d)(?=(\d{3})+$)/g, '$1,');
+				}
+				if (str[1] && str[1].length >= 5) {
+					str[1] = str[1].replace(/(\d{3})/g, '$1 ');
+				}
+				return str.join('.');
+			}
+			
+			
+			function start()
+			{
+				var xmlHttp = new XMLHttpRequest();
+				xmlHttp.open( "GET", location.origin+"/command?id="+miner_id+"&cmd=start", false); // false for synchronous request
+				xmlHttp.send();
+				console.log("start command http code: "+xmlHttp.status)
+			}
+			
+			function stop()
+			{
+				var xmlHttp = new XMLHttpRequest();
+				xmlHttp.open( "GET", location.origin+"/command?id="+miner_id+"&cmd=stop", false); // false for synchronous request
+				xmlHttp.send();
+				console.log("stop command http code: "+xmlHttp.status)
+			}
+			
+		</script>
+		<style>
+			table {
+				font-family: arial, sans-serif;
+				border-collapse: collapse;
+				width: 100%;
+			}
+
+			td, th {
+				border: 1px solid #dddddd;
+				text-align: left;
+				padding: 8px;
+			}
+
+			tr:nth-child(even) {
+				background-color: #dddddd;
+			}
+		</style>
+		</head>
+	<body>
+	
+	
+	<div id="error" style="color: red;height: 10px;margin-top:10px"></div>
+	
+	<div >
+		<button id="startButton" type="button" onclick="start()">Start</button>
+		<button id="stopButton" type="button" onclick="stop()">Stop</button>
+		<div id="helper" style="margin-left: 10px; display: inline-block"></div>
+	</div>
+	
+	<div id="totalHPS" style="margin-top: 5px"></div>
+	<table id="miner-table" style="height: 15%">
+		<tbody>
+			<tr>
+				<th align="left">Id</th>
+			</tr>
+			<tr>
+				<th align="left">CPU</th>
+			</tr>
+			<tr>
+				<th align="left">Process</th>
+			</tr>
+			<tr>
+				<th align="left">Gomochi</th>
+			</tr>
+			<tr>
+				<th align="left">Listen</th>
+			</tr>
+			<tr>
+				<th align="left">Solving</th>
+			</tr>
+			<tr>
+				<th align="left">Block</th>
+			</tr>
+			<tr>
+				<th align="left">Diff</th>
+			</tr>
+			<tr>
+				<th align="left">HPS</th>
+			</tr>
+						<tr>
+				<th align="left">Solved</th>
+		</tbody
+	</table>
+	
+	</body>
+</html>
