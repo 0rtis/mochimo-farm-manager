@@ -1,4 +1,5 @@
 [![GitHub license](https://img.shields.io/github/license/0rtis/mochimo-farm-manager.svg?style=flat-square)](https://github.com/0rtis/mochimo-farm-manager/blob/master/LICENSE)
+[![Build Status](https://img.shields.io/travis/0rtis/mochimo-farm-manager.svg?style=flat-square)](https://travis-ci.org/0rtis/mochimo-farm-manager)
 [![Follow @Ortis95](https://img.shields.io/twitter/follow/Ortis95.svg?style=flat-square)](https://twitter.com/intent/follow?screen_name=Ortis95) 
 
 
