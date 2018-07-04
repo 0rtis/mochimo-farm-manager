@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -63,10 +64,10 @@ public class Start implements Callable<Void>
 	private String hostBind = "127.0.0.1:80";
 
 	@Option(names = { "-sp", "--statistics-parallelism" }, paramLabel = "statistics_parallelism", description = "Number of statistics computing thread")
-	private int statParallelism = 3;
+	private int statParallelism = 6;
 
 	@Option(names = { "-sh", "--statistics-heartbeat" }, paramLabel = "statistics_heartbeat", description = "Delay between statistic computation in seconds")
-	private int statHeartbeat = 30;
+	private int statHeartbeat = 60;
 
 	@Option(names = { "-hp", "--http-parallelism" }, paramLabel = "http_parallelism", description = "Number of http handler thread")
 	private int httpParallelism = 5;
@@ -98,7 +99,7 @@ public class Start implements Callable<Void>
 				}
 			};
 
-			switch (this.logLevel)
+			switch (this.logLevel.toUpperCase(Locale.ENGLISH))
 			{
 				case "ERROR":
 					LogFactory.setLevel(Level.SEVERE);

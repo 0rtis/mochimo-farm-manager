@@ -120,7 +120,8 @@ public class SSHConnector
 		inputReader.close();
 
 		if (errBaos.size() > 0)
-			throw new Exception(new String(errBaos.toByteArray()));
+			this.log.fine("STDERR -> " + new String(errBaos.toByteArray()));
+		// throw new Exception(new String(errBaos.toByteArray())); //Some terminal will send harmless error
 
 		/*
 		if (channel.getExitStatus() != 0)

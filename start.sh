@@ -5,7 +5,7 @@ MINER_BIN_PATH="/home/user/mochimo/bin"
 
 
 #move to bin folder
-cd cd ${MINER_BIN_PATH}
+cd ${MINER_BIN_PATH}
 
 #clear log file
 echo '' > miner.log

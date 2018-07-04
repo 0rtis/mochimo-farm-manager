@@ -16,8 +16,6 @@ package org.ortis.mochimo.farm_manager.farm;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
@@ -37,7 +35,7 @@ public class StatisticsUpdateScheduler implements Runnable
 	private final MiningFarm farm;
 	private final Duration checkHeartbeat;
 	private final Duration updateHeartbeat;
-	private final Queue<Miner> queue;
+	private final TaskBoard taskBoard;
 	private final Supplier<LocalDateTime> clock;
 	private Logger log;
 
@@ -53,7 +51,7 @@ public class StatisticsUpdateScheduler implements Runnable
 	 *            pending update queue
 	 * @param log
 	 */
-	public StatisticsUpdateScheduler(final MiningFarm farm, final Duration checkHeartbeat, final Duration updateHeartbeat, final BlockingQueue<Miner> queue, final Supplier<LocalDateTime> clock,
+	public StatisticsUpdateScheduler(final MiningFarm farm, final Duration checkHeartbeat, final Duration updateHeartbeat, final TaskBoard taskBoard, final Supplier<LocalDateTime> clock,
 			final Logger log)
 	{
 		this.farm = farm;
@@ -65,7 +63,7 @@ public class StatisticsUpdateScheduler implements Runnable
 		if (this.updateHeartbeat.isNegative() || this.updateHeartbeat.isZero())
 			throw new IllegalArgumentException("Update heartbeat duration must be positive");
 
-		this.queue = queue;
+		this.taskBoard = taskBoard;
 		this.clock = clock;
 		this.log = log;
 
@@ -84,21 +82,24 @@ public class StatisticsUpdateScheduler implements Runnable
 				for (final Miner miner : farm.getMiners())
 				{
 
-					if (this.queue.contains(miner))
+					if (this.taskBoard.contains(miner))
 					{
-						this.log.finest("Statistics update of miner " + miner + " is already pending. Skipping");
+						this.log.finest("Statistics update task of miner " + miner + " is already pending. Skipping");
 						continue;
 					}
 
-					if (miner.getStatistics().isDefault() || Duration.between(miner.getStatistics().getTime(), this.clock.get()).compareTo(this.updateHeartbeat) > 0)
+					final boolean def = miner.getStatistics().isDefault();
+					final Duration elpased = Duration.between(miner.getStatistics().getTime(), this.clock.get());
+					if (def || elpased.compareTo(this.updateHeartbeat) > 0)
 					{
+
 						this.log.fine("Requesting update for miner " + miner);
-						this.queue.add(miner);
+						this.taskBoard.add(miner);
 					}
 
 				}
 
-				this.log.fine("Pending statistics update -> " + this.queue.size());
+				this.log.fine("Pending statistics update -> " + this.taskBoard.pendingSize());
 
 				final long elapsed = System.currentTimeMillis() - start;
 

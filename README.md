@@ -36,8 +36,8 @@ Mochimo Farm Manager installation:
 	6. `stopCommand`: stop command of the miner. If not specified, a `kill` command is send
 	7. `logCommand`: command to retrieve miner's log.
 4. *Higly Recommended*: encrypt your configuration file </br> `java -jar mochimo-farm-manager-version.jar encrypt plain_text_config.json encrypted_config.json`
-5. Check out the running options `java -jar mochimo-farm-manager-version.jar start -h`
-6. Start the manager `java -jar mochimo-farm-manager-version.jar start mining_farm_config.json html`.
+5. Check out start option `java -jar mochimo-farm-manager-version.jar start -h`
+6. Start the manager `java -jar mochimo-farm-manager-version.jar start mining_farm_config.json html`
 7. Access the dashboard http://localhost
 
 

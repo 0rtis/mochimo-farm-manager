@@ -23,5 +23,5 @@ package org.ortis.mochimo.farm_manager;
 
 public class Version
 {
-	public static final String VERSION = "v0.1 beta";
+	public static final String VERSION = "v0.2 beta";
 }

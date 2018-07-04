@@ -5,7 +5,7 @@
   <name>farm_manager</name>
   <groupId>org.ortis.mochimo</groupId>
   <artifactId>mochimo-farm-manager</artifactId>
-  <version>0.1</version>
+  <version>0.2</version>
   <packaging>jar</packaging>
 
 

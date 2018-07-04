@@ -1,24 +1,17 @@
 /*******************************************************************************
  * Copyright (C) 2018 Ortis (cao.ortis.org@gmail.com)
  * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without
+ * limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following
+ * conditions:
  * 
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
  ******************************************************************************/
+
 package org.ortis.mochimo.farm_manager.farm;
 
 import java.io.IOException;
@@ -35,10 +28,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -123,15 +114,15 @@ public class MiningFarm
 			this.miners.add(miner);
 		}
 
-		final BlockingQueue<Miner> statisticsUpdateQueue = new LinkedBlockingQueue<>();
+		final TaskBoard taskBoard = new TaskBoard(Duration.ofMillis(1000), LogFactory.getLogger("TaskBoard"));
 		this.statisticUpdateSchedulerThread = new Thread(
-				new StatisticsUpdateScheduler(this, Duration.ofMillis(Math.max(1000, statisticsUpdateHeartbeat.toMillis() / 10)), statisticsUpdateHeartbeat, statisticsUpdateQueue, this.clock, log));
+				new StatisticsUpdateScheduler(this, Duration.ofMillis(Math.max(1000, statisticsUpdateHeartbeat.toMillis() / 10)), statisticsUpdateHeartbeat, taskBoard, this.clock, log));
 		this.statisticUpdateSchedulerThread.setName("StatisticsUpdateScheduler");
 		this.statisticsPool = Executors.newFixedThreadPool(statisticsParallelism);
 
 		for (int i = 0; i < statisticsParallelism; i++)
 		{
-			final StatisticsUpdater su = new StatisticsUpdater(statisticsUpdateQueue, log);
+			final StatisticsUpdater su = new StatisticsUpdater(taskBoard, log);
 			this.statisticsPool.submit(su);
 		}
 
