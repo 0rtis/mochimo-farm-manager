@@ -61,7 +61,7 @@ public class Start implements Callable<Void>
 	private String password = null;
 
 	@Option(names = { "-b", "--bind" }, description = "Host to bind")
-	private String hostBind = "127.0.0.1:80";
+	private String hostBind = "127.0.0.1:8888";
 
 	@Option(names = { "-sp", "--statistics-parallelism" }, paramLabel = "statistics_parallelism", description = "Number of statistics computing thread")
 	private int statParallelism = 6;
@@ -204,7 +204,7 @@ public class Start implements Callable<Void>
 				return null;
 			}
 
-			final Host host = new Host(this.hostBind, 80);
+			final Host host = new Host(this.hostBind, 8888);
 
 			HttpServer httpServer = new HttpServer(new InetSocketAddress(host.getHostname(), host.getPort()), httpPool);
 			httpServer.addContext("/", new HttpRequestHandler(miningFarm, htmlPath, LogFactory.getLogger("HttpRequestHandler")));

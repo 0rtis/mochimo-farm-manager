@@ -32,7 +32,7 @@
 	
 					cell = tbody.rows[i].insertCell(tbody.rows[i].cells.length)
 					
-					if(i>0 && miner.cpu<0)
+					if(i>0 && miner.cpu == null)
 					{
 						document.getElementById("startButton").disabled = true;
 						document.getElementById("stopButton").disabled = true;
@@ -53,45 +53,72 @@
 						break;
 												
 						case 1://CPU
-							cell.innerHTML = (Math.round(miner.cpu * 100) / 100) +"%"
+							if(miner.cpu != null)
+							{
+								cell.innerHTML = (Math.round(miner.cpu * 100) / 100) +"%"
+							}
 						break;
 
 						case 2://Process
-							var processes = ""
-							for(j=0;j<miner.processes.length;j++)
-								if(j == 0)
-									processes="["+miner.processes[j]+"]"
-								else						
-									processes+=", ["+miner.processes[j]+"]"
-							cell.innerHTML = processes
+							if(miner.processes != null)
+							{
+								var processes = ""
+								for(j=0;j<miner.processes.length;j++)
+									if(j == 0)
+										processes="["+miner.processes[j]+"]"
+									else						
+										processes+=", ["+miner.processes[j]+"]"
+								cell.innerHTML = processes
+							}
 						break;
 
 						case 3://Gomochi
-							cell.innerHTML = miner.gomochi
+							if(miner.gomochi != null)
+							{
+								cell.innerHTML = miner.gomochi
+							}
 						break;
 						
 						case 4://Listen
-							cell.innerHTML = miner.listen
+							if(miner.listen != null)
+							{
+								cell.innerHTML = miner.listen
+							}
 						break;
 						
 						case 5://Solving
-							cell.innerHTML = miner.solving
+							if(miner.solving != null)
+							{
+								cell.innerHTML = miner.solving
+							}
 						break;
 						
 						case 6://Block
-							cell.innerHTML = miner.block
+							if(miner.block != null)
+							{
+								cell.innerHTML = miner.block
+							}
 						break;
 						
 						case 7://Difficulty
-							cell.innerHTML = miner.difficulty
+							if(miner.difficulty != null)
+							{
+								cell.innerHTML = miner.difficulty
+							}
 						break;
 						
 						case 8://HPS
-							cell.innerHTML = commafy(miner.hps)
+							if(miner.hps != null)
+							{
+								cell.innerHTML = commafy(miner.hps)
+							}
 						break;
 						
 						case 9://Solved
-							cell.innerHTML = miner.solved
+							if(miner.solved != null)
+							{
+								cell.innerHTML = miner.solved
+							}
 						break;
 						
 						default:

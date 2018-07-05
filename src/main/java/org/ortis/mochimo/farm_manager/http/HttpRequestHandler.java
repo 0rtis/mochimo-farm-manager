@@ -52,7 +52,7 @@ import com.sun.net.httpserver.HttpHandler;
 @SuppressWarnings("restriction")
 public class HttpRequestHandler implements HttpHandler
 {
-	private final static Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	private final static Gson GSON = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
 
 	private final MiningFarm miningFarm;
 	private final Path htmlRepository;

@@ -68,4 +68,10 @@ public class StatisticsUpdateTask implements Callable<Void>
 		return false;
 	}
 
+	
+	@Override
+	public String toString()
+	{
+		return this.miner.getId() + " update task";
+	}
 }

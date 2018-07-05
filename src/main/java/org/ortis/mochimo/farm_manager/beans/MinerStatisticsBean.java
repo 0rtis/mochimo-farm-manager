@@ -1,24 +1,17 @@
 /*******************************************************************************
  * Copyright (C) 2018 Ortis (cao.ortis.org@gmail.com)
  * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without
+ * limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following
+ * conditions:
  * 
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
  ******************************************************************************/
+
 package org.ortis.mochimo.farm_manager.beans;
 
 import java.time.format.DateTimeFormatter;
@@ -42,15 +35,15 @@ public class MinerStatisticsBean
 
 	public final String minerId;
 	public final String datetime;
-	public final double cpu;
+	public final Float cpu;
 	public final List<String> processes;
-	public final boolean gomochi;
-	public final boolean listen;
-	public final boolean solving;
-	public final double hps;
+	public final Boolean gomochi;
+	public final Boolean listen;
+	public final Boolean solving;
+	public final Double hps;
 	public final String block;
-	public final int solved;
-	public final int difficulty;
+	public final Integer solved;
+	public final Integer difficulty;
 
 	public MinerStatisticsBean(final MinerStatistics statistics)
 	{
@@ -63,10 +56,10 @@ public class MinerStatisticsBean
 		this.listen = statistics.isListen();
 		this.solving = statistics.isSolving();
 
-		double hps = -1;
+		Double hps = null;
 		String block = null;
-		int solved = -1;
-		int difficulty = -1;
+		Integer solved = null;
+		Integer difficulty = null;
 
 		for (final Map.Entry<String, String> entry : statistics.getStatistics().entrySet())
 		{
@@ -82,10 +75,19 @@ public class MinerStatisticsBean
 
 		}
 
-		this.hps = hps;
-		this.block = block;
-		this.solved = solved;
-		this.difficulty = difficulty;
+		if (statistics.getStatistics().isEmpty())
+		{
+			this.hps = null;
+			this.block = null;
+			this.solved = null;
+			this.difficulty = null;
+		} else
+		{
+			this.hps = hps;
+			this.block = block;
+			this.solved = solved;
+			this.difficulty = difficulty;
+		}
 	}
 
 }

@@ -40,54 +40,79 @@
 					cell.innerHTML = '<a href="miner.html?refresh=5000&id='+miner.minerId+'" target="_blank">'+miner.minerId+'</a>';
 					cell.dataset.value = cell.innerHTML;
 					
-					if(miner.cpu<0)
+					
+					var cell = row.insertCell(row.cells.length);
+					if(miner.cpu != null)
 					{
-						continue
+						cell.innerHTML = Math.round(miner.cpu * 100) / 100
+						cell.dataset.value = parseFloat(cell.innerHTML);
 					}
 					
 					var cell = row.insertCell(row.cells.length);
-					cell.innerHTML = Math.round(miner.cpu * 100) / 100
-					cell.dataset.value = parseFloat(cell.innerHTML);
+					if(miner.processes !=null)
+					{
+						var processes = ""
+										
+						for(j=0;j<miner.processes.length;j++)
+							if(j == 0)
+								processes="["+miner.processes[j]+"]"
+							else						
+								processes+=", ["+miner.processes[j]+"]"
+														
+						cell.innerHTML = processes;
+						cell.dataset.value = cell.innerHTML;
+					}
 
-					var cell = row.insertCell(row.cells.length);
-					var processes = ""
-									
-					for(j=0;j<miner.processes.length;j++)
-						if(j == 0)
-							processes="["+miner.processes[j]+"]"
-						else						
-							processes+=", ["+miner.processes[j]+"]"
-													
-					cell.innerHTML = processes;
-					cell.dataset.value = cell.innerHTML;
-
-					var cell = row.insertCell(row.cells.length);
-					cell.innerHTML = miner.gomochi;
-					cell.dataset.value = cell.innerHTML;
-
-					var cell = row.insertCell(row.cells.length);
-					cell.innerHTML = miner.listen;
-					cell.dataset.value = cell.innerHTML;
 					
 					var cell = row.insertCell(row.cells.length);
-					cell.innerHTML = miner.solving;
-					cell.dataset.value = cell.innerHTML;
+					if(miner.gomochi !=null)
+					{
+						cell.innerHTML = miner.gomochi;
+						cell.dataset.value = cell.innerHTML;
+					}
+					
 					
 					var cell = row.insertCell(row.cells.length);
-					cell.innerHTML = miner.block;
-					cell.dataset.value = cell.innerHTML;
+					if(miner.listen !=null)
+					{
+						cell.innerHTML = miner.listen;
+						cell.dataset.value = cell.innerHTML;
+					}
 					
 					var cell = row.insertCell(row.cells.length);
-					cell.innerHTML = miner.difficulty;
-					cell.dataset.value = cell.innerHTML;
+					if(miner.solving !=null)
+					{
+						cell.innerHTML = miner.solving;
+						cell.dataset.value = cell.innerHTML;
+					}
 					
 					var cell = row.insertCell(row.cells.length);
-					cell.innerHTML = commafy(miner.hps);
-					cell.dataset.value = parseFloat(cell.innerHTML);
+					if(miner.block !=null)
+					{
+						cell.innerHTML = miner.block;
+						cell.dataset.value = cell.innerHTML;
+					}
 					
 					var cell = row.insertCell(row.cells.length);
-					cell.innerHTML = miner.solved;
-					cell.dataset.value = parseFloat(cell.innerHTML);
+					if(miner.difficulty !=null)
+					{
+						cell.innerHTML = miner.difficulty;
+						cell.dataset.value = cell.innerHTML;
+					}
+					
+					var cell = row.insertCell(row.cells.length);
+					if(miner.hps !=null)
+					{
+						cell.innerHTML = commafy(miner.hps);
+						cell.dataset.value = parseFloat(cell.innerHTML);
+					}
+					
+					var cell = row.insertCell(row.cells.length);
+					if(miner.solved !=null)
+					{
+						cell.innerHTML = miner.solved;
+						cell.dataset.value = parseFloat(cell.innerHTML);
+					}
 				}
 				
 				var table = document.getElementById("miner-table");

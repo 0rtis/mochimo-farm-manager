@@ -44,7 +44,7 @@ import com.google.gson.reflect.TypeToken;
 public class MiningFarmConfig
 {
 
-	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
 
 	private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>()
 	{

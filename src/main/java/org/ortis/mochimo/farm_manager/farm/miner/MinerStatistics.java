@@ -31,11 +31,11 @@ public class MinerStatistics
 {
 	private final LocalDateTime time;
 	private final String minerId;
-	private float cpu = -1;
+	private Float cpu = null;
 	private List<String> processes;
-	private boolean gomochi;
-	private boolean listen;
-	private boolean solving;
+	private Boolean gomochi;
+	private Boolean listen;
+	private Boolean solving;
 
 	private Map<String, String> statistics;
 
@@ -67,7 +67,7 @@ public class MinerStatistics
 		this.statistics.put(key, value);
 	}
 
-	public float getCpu()
+	public Float getCpu()
 	{
 		return cpu;
 	}
@@ -87,7 +87,7 @@ public class MinerStatistics
 		this.processes.add(process);
 	}
 
-	public boolean isGomochi()
+	public Boolean isGomochi()
 	{
 		return gomochi;
 	}
@@ -97,7 +97,7 @@ public class MinerStatistics
 		this.gomochi = gomochi;
 	}
 
-	public boolean isListen()
+	public Boolean isListen()
 	{
 		return listen;
 	}
@@ -107,7 +107,7 @@ public class MinerStatistics
 		this.listen = listen;
 	}
 
-	public boolean isSolving()
+	public Boolean isSolving()
 	{
 		return solving;
 	}
@@ -119,7 +119,7 @@ public class MinerStatistics
 
 	public boolean isDefault()
 	{
-		return this.cpu < 0;
+		return this.cpu == null;
 	}
 
 	@Override

@@ -1,24 +1,17 @@
 /*******************************************************************************
  * Copyright (C) 2018 Ortis (cao.ortis.org@gmail.com)
  * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without
+ * limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following
+ * conditions:
  * 
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
  ******************************************************************************/
+
 package org.ortis.mochimo.farm_manager.farm.miner;
 
 import java.time.LocalDateTime;
@@ -63,7 +56,7 @@ public class SSHMiner implements Miner
 
 	private <D extends Collection<String>> D parsePids(final D destination) throws Exception
 	{
-		final List<String> stdout = this.connector.execute("ps faux | grep mochi");
+		final List<String> stdout = this.connector.execute("ps faux | grep -E 'mochimo |gomochi d'");// get all pids that contains 'mochimo ' or 'gomochi d'
 
 		for (final String line : stdout)
 		{
@@ -88,7 +81,11 @@ public class SSHMiner implements Miner
 		}
 
 		this.log.info("Starting");
-		this.connector.execute(this.startCommand);
+		this.log.fine("Start command -> " + this.startCommand);
+		final List<String> stdout = this.connector.execute(this.startCommand);
+		final StringBuilder sbout = new StringBuilder("Start command STDOUT -> ");
+		stdout.forEach(l -> sbout.append("\n").append(l));
+		this.log.fine(sbout.toString());
 		Thread.sleep(3000); // let processes spawn
 		pids.clear();
 		final boolean success = parsePids(pids).size() > 0;
@@ -105,16 +102,25 @@ public class SSHMiner implements Miner
 		if (this.stopCommand == null)
 		{
 			this.log.info("Stopping with Kill Command (Deal 3 damage. If you have a Beast, deal 5 damage instead.)");
-			// get mochimo pids and kill them all !
 
+			// get mochimo pids and kill them all !
 			final StringBuilder sb = new StringBuilder("date");
 			for (final String pid : pids)
-				sb.append(" && kill ").append(pid);
-			this.connector.execute(sb.toString());
+				sb.append(" ; kill ").append(pid); // separate kill: sometime we will get something that is not mochimo and the kill will failed because we dont have the right.
+
+			this.log.fine("Stop command -> " + sb);
+			final List<String> stdout = this.connector.execute(sb.toString());
+			final StringBuilder sbout = new StringBuilder("Stop command STDOUT -> ");
+			stdout.forEach(l -> sbout.append("\n").append(l));
+			this.log.fine(sbout.toString());
 		} else
 		{
 			this.log.info("Stopping");
-			this.connector.execute(this.stopCommand);
+			this.log.fine("Stop command -> " + this.stopCommand);
+			final List<String> stdout = this.connector.execute(this.stopCommand);
+			final StringBuilder sbout = new StringBuilder("Stop command STDOUT -> \n");
+			stdout.forEach(l -> sbout.append("\n").append(l));
+			this.log.fine(sbout.toString());
 		}
 
 		Thread.sleep(3000); // let processes vanish
@@ -172,6 +178,10 @@ public class SSHMiner implements Miner
 		}
 
 		minerStatistics.getProcesses().sort(null);
+
+		minerStatistics.setGomochi(false);
+		minerStatistics.setListen(false);
+		minerStatistics.setSolving(false);
 
 		for (final String process : minerStatistics.getProcesses())
 		{

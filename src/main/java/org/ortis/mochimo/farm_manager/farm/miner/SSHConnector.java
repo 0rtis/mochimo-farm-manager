@@ -120,8 +120,14 @@ public class SSHConnector
 		inputReader.close();
 
 		if (errBaos.size() > 0)
-			this.log.fine("STDERR -> " + new String(errBaos.toByteArray()));
-		// throw new Exception(new String(errBaos.toByteArray())); //Some terminal will send harmless error
+		{
+			final String stderr = new String(errBaos.toByteArray());
+
+			if (stderr.contains("ttyname failed"))// harmless error
+				this.log.fine("Silent STDERR  -> " + stderr);
+			else
+				throw new Exception("Error from STDERR while running command " + fullCommand + " -> " + stderr);
+		}
 
 		/*
 		if (channel.getExitStatus() != 0)
