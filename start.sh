@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #update MINER_BIN_PATH with your path
-MINER_BIN_PATH="/home/user/mochimo/bin"
+MINER_BIN_PATH=$HOME"/mochimo/mochi/bin"
 
 
 #move to bin folder
