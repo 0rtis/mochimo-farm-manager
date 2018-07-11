@@ -104,7 +104,7 @@ public abstract class Encryption
 			miners.add(encrypted);
 		}
 
-		final MiningFarmConfig encrypted = new MiningFarmConfig(miners, salt, key);
+		final MiningFarmConfig encrypted = new MiningFarmConfig(key, salt, miningFarmConfig.getNetworkConsensuses(), miners);
 		return encrypted;
 	}
 
@@ -147,7 +147,7 @@ public abstract class Encryption
 		for (final MinerConfig minerConfig : miningFarmConfig.getMinerConfigs())
 			decryptedMiners.add(decrypt(minerConfig, key));
 
-		final MiningFarmConfig decrypted = new MiningFarmConfig(decryptedMiners, null, key);
+		final MiningFarmConfig decrypted = new MiningFarmConfig(key, null, miningFarmConfig.getNetworkConsensuses(), decryptedMiners);
 		return decrypted;
 
 	}

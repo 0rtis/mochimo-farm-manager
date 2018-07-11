@@ -39,7 +39,7 @@ import picocli.CommandLine.Command;
  * @author Ortis <br>
  *         2018 Jul 03 9:27:20 PM <br>
  */
-@Command(description = "Bootstrap", mixinStandardHelpOptions = true, version = Version.VERSION, subcommands = { Start.class, Encrypt.class, Decrypt.class })
+@Command(description = "Bootstrap", mixinStandardHelpOptions = true, version = Version.VERSION, subcommands = { Start.class, Encrypt.class, Decrypt.class, Estimate.class })
 public class Bootstrap implements Callable<Void>
 {
 

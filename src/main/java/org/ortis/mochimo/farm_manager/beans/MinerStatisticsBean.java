@@ -40,8 +40,10 @@ public class MinerStatisticsBean
 	public final Boolean gomochi;
 	public final Boolean listen;
 	public final Boolean solving;
+	public final Boolean syncing;
 	public final Double hps;
 	public final String block;
+	public final Integer height;
 	public final Integer solved;
 	public final Integer difficulty;
 
@@ -55,9 +57,11 @@ public class MinerStatisticsBean
 		this.gomochi = statistics.isGomochi();
 		this.listen = statistics.isListen();
 		this.solving = statistics.isSolving();
+		this.syncing = statistics.isSyncing();
 
 		Double hps = null;
 		String block = null;
+		Integer height = null;
 		Integer solved = null;
 		Integer difficulty = null;
 
@@ -72,6 +76,8 @@ public class MinerStatisticsBean
 				difficulty = Integer.parseInt(entry.getValue());
 			else if (keyUpper.contains("BLOCK"))
 				block = entry.getValue();
+			else if (keyUpper.contains("HEIGHT"))
+				height = Integer.parseInt(entry.getValue());
 
 		}
 
@@ -79,12 +85,14 @@ public class MinerStatisticsBean
 		{
 			this.hps = null;
 			this.block = null;
+			this.height = null;
 			this.solved = null;
 			this.difficulty = null;
 		} else
 		{
 			this.hps = hps;
 			this.block = block;
+			this.height = height;
 			this.solved = solved;
 			this.difficulty = difficulty;
 		}

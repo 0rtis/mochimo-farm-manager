@@ -1,5 +1,5 @@
 
-package org.ortis.mochimo.farm_manager.farm;
+package org.ortis.mochimo.farm_manager.farm.tasks;
 
 import java.time.Duration;
 import java.util.LinkedList;
@@ -10,7 +10,7 @@ import org.ortis.mochimo.farm_manager.farm.miner.Miner;
 import org.ortis.mochimo.farm_manager.utils.Utils;
 
 /**
- * Keep track of pending {@link StatisticsUpdateTask}
+ * Keep track of pending {@link MinerTask}
  * 
  * @author Ortis <br>
  *         2018 Jul 04 7:34:27 PM <br>
@@ -19,6 +19,8 @@ public class TaskBoard
 {
 	private final Duration sleepTime;
 	private final Logger log;
+
+	private final List<MinerTask> tasks = new LinkedList<>();
 
 	public TaskBoard(final Duration sleepTime, final Logger log)
 	{
@@ -29,35 +31,33 @@ public class TaskBoard
 		this.log = log;
 	}
 
-	private final List<StatisticsUpdateTask> tasks = new LinkedList<>();
-
 	public boolean contains(final Miner miner)
 	{
 		synchronized (this.tasks)
 		{
-			for (final StatisticsUpdateTask stu : this.tasks)
+			for (final MinerTask stu : this.tasks)
 				if (miner.equals(stu.getMiner()))
 					return true;
 		}
 		return false;
 	}
 
-	public void add(final Miner miner)
+	public void add(final MinerTask task)
 	{
 		synchronized (this.tasks)
 		{
-			this.tasks.add(new StatisticsUpdateTask(miner));
+			this.tasks.add(task);
 		}
 
 	}
 
 	public void execute() throws InterruptedException, Exception
 	{
-		StatisticsUpdateTask task = null;
+		MinerTask task = null;
 		synchronized (this.tasks)
 		{
 
-			for (final StatisticsUpdateTask sut : this.tasks)
+			for (final MinerTask sut : this.tasks)
 				if (sut.acquire(Thread.currentThread()))
 				{
 					task = sut;
@@ -81,13 +81,14 @@ public class TaskBoard
 
 			}
 
-			remove(task);
+			if (!remove(task))
+				throw new Exception("Could not remove task " + task);
 
 		}
 
 	}
 
-	private boolean remove(final StatisticsUpdateTask task)
+	private boolean remove(final MinerTask task)
 	{
 		synchronized (this.tasks)
 		{

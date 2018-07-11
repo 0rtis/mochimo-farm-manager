@@ -14,6 +14,7 @@
 
 package org.ortis.mochimo.farm_manager.farm.miner;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,6 +37,7 @@ public class MinerStatistics
 	private Boolean gomochi;
 	private Boolean listen;
 	private Boolean solving;
+	private Boolean syncing;
 
 	private Map<String, String> statistics;
 
@@ -89,7 +91,7 @@ public class MinerStatistics
 
 	public Boolean isGomochi()
 	{
-		return gomochi;
+		return this.gomochi;
 	}
 
 	public void setGomochi(final boolean gomochi)
@@ -99,7 +101,7 @@ public class MinerStatistics
 
 	public Boolean isListen()
 	{
-		return listen;
+		return this.listen;
 	}
 
 	public void setListen(final boolean listen)
@@ -109,7 +111,7 @@ public class MinerStatistics
 
 	public Boolean isSolving()
 	{
-		return solving;
+		return this.solving;
 	}
 
 	public void setSolving(final boolean solving)
@@ -117,9 +119,29 @@ public class MinerStatistics
 		this.solving = solving;
 	}
 
+	public void setSyncing(final boolean syncing)
+	{
+		this.syncing = syncing;
+	}
+
+	public Boolean isSyncing()
+	{
+		return this.syncing;
+	}
+
+	public boolean isRunning()
+	{
+		return !this.processes.isEmpty();
+	}
+
 	public boolean isDefault()
 	{
 		return this.cpu == null;
+	}
+
+	public Duration getAge(final LocalDateTime now)
+	{
+		return Duration.between(this.time, now);
 	}
 
 	@Override

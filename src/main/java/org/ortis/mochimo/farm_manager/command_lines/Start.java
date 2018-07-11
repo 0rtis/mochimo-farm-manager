@@ -63,11 +63,20 @@ public class Start implements Callable<Void>
 	@Option(names = { "-b", "--bind" }, description = "Host to bind")
 	private String hostBind = "127.0.0.1:8888";
 
-	@Option(names = { "-sp", "--statistics-parallelism" }, paramLabel = "statistics_parallelism", description = "Number of statistics computing thread")
-	private int statParallelism = 6;
-
 	@Option(names = { "-sh", "--statistics-heartbeat" }, paramLabel = "statistics_heartbeat", description = "Delay between statistic computation in seconds")
 	private int statHeartbeat = 60;
+
+	@Option(names = { "-sp", "--statistics-parallelism" }, paramLabel = "statistics_parallelism", description = "Number of statistics computing thread")
+	private int statParallelism = 20;
+
+	@Option(names = { "-wh", "--watchdog-heartbeat" }, paramLabel = "watchdog_heartbeat", description = "Delay between watchdog check seconds")
+	private int watchDogHeartbeat = 60;
+
+	@Option(names = { "-wp", "--watchdog-parallelism" }, paramLabel = "watchdog_parallelism", description = "Number of watchdog policy checking thread")
+	private int watchDogParallelism = 5;
+
+	@Option(names = { "-ch", "--consensus-heartbeat" }, paramLabel = "consensus_heartbeat", description = "Delay between consensus computation in seconds")
+	private int consensusHeartbeat = 60;
 
 	@Option(names = { "-hp", "--http-parallelism" }, paramLabel = "http_parallelism", description = "Number of http handler thread")
 	private int httpParallelism = 5;
@@ -181,7 +190,26 @@ public class Start implements Callable<Void>
 				return null;
 			}
 
-			final MiningFarm miningFarm = new MiningFarm(miningFarmConfig, Duration.ofSeconds(this.statHeartbeat), this.statParallelism, clock, LogFactory.getLogger("farm"));
+			if (this.watchDogHeartbeat <= 0)
+			{
+				log.severe("watchdog-heartbeat must be greater than 0");
+				return null;
+			}
+
+			if (this.watchDogParallelism <= 0)
+			{
+				log.severe("watchdog-parallelism must be greater than 0");
+				return null;
+			}
+
+			if (this.consensusHeartbeat <= 0)
+			{
+				log.severe("consensus-heartbeat must be greater than 0");
+				return null;
+			}
+
+			final MiningFarm miningFarm = new MiningFarm(miningFarmConfig, Duration.ofSeconds(this.statHeartbeat), this.statParallelism, Duration.ofSeconds(this.watchDogHeartbeat),
+					this.watchDogParallelism, Duration.ofSeconds(this.consensusHeartbeat), clock, LogFactory.getLogger("farm"));
 
 			// http server
 			if (this.httpParallelism <= 0)

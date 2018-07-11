@@ -12,26 +12,25 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  ******************************************************************************/
 
-package org.ortis.mochimo.farm_manager.farm;
+package org.ortis.mochimo.farm_manager.farm.tasks;
 
 import java.util.logging.Logger;
 
-import org.ortis.mochimo.farm_manager.farm.miner.MinerStatistics;
 import org.ortis.mochimo.farm_manager.utils.Utils;
 
 /**
- * Update {@link MinerStatistics}
+ * Process task from {@link TaskBoard}
  * 
  * @author Ortis <br>
  *         2018 Jul 01 11:59:20 PM <br>
  */
-public class StatisticsUpdater implements Runnable
+public class TaskWorker implements Runnable
 {
 
 	private final TaskBoard taskBoard;
 	private final Logger log;
 
-	public StatisticsUpdater(final TaskBoard taskBoard, final Logger log)
+	public TaskWorker(final TaskBoard taskBoard, final Logger log)
 	{
 		this.taskBoard = taskBoard;
 		this.log = log;

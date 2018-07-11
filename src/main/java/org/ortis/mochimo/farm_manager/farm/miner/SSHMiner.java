@@ -14,12 +14,18 @@
 
 package org.ortis.mochimo.farm_manager.farm.miner;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
+
+import org.ortis.mochimo.farm_manager.network.MochimoNetwork;
+import org.ortis.mochimo.farm_manager.network.consensus.NetworkConsensus;
 
 /**
  * An SSH based implementation of {@link Miner}.
@@ -29,24 +35,36 @@ import java.util.logging.Logger;
  */
 public class SSHMiner implements Miner
 {
+	private final static long SWITCH_SLEEP = 3000;
+	private final static int SWITCH_LOOP = 3;
 
 	private final String id;
 	private final String startCommand;
 	private final String stopCommand;
 	private final String logCommand;
 	private final SSHConnector connector;
+	private final List<String> policies;
 	private final Supplier<LocalDateTime> clock;
 	private final Logger log;
 
 	private MinerStatistics statistics;
 	private final Object statisticsLock = new Object();
 
-	public SSHMiner(final String id, final String startCommand, final String stopCommand, final String logCommand, final SSHConnector connector, final Supplier<LocalDateTime> clock, final Logger log)
+	private LocalDateTime startTime;
+	private LocalDateTime stopTime;
+	private final Object timeLock = new Object();
+
+	public SSHMiner(final String id, final String startCommand, final String stopCommand, final String logCommand, final List<String> restartPolicies, final SSHConnector connector,
+			final Supplier<LocalDateTime> clock, final Logger log)
 	{
 		this.id = id;
 		this.startCommand = startCommand;
 		this.stopCommand = stopCommand;
 		this.logCommand = logCommand;
+
+		checkPoliciesFormat(restartPolicies);
+		this.policies = Collections.unmodifiableList(new ArrayList<>(restartPolicies));
+
 		this.connector = connector;
 		this.clock = clock;
 		this.log = log;
@@ -54,24 +72,66 @@ public class SSHMiner implements Miner
 		clearStatistics();
 	}
 
-	private <D extends Collection<String>> D parsePids(final D destination) throws Exception
+	private <D extends Collection<String>> D parseMainPids(final D destination) throws Exception
 	{
-		final List<String> stdout = this.connector.execute("ps faux | grep -E 'mochimo |gomochi d'");// get all pids that contains 'mochimo ' or 'gomochi d'
 
+		final List<String> stdout = this.connector.execute("pidof mochimo ; echo 'delimiter' ; ps faux | grep 'gomochi '");
+
+		boolean delimiter = false;
 		for (final String line : stdout)
 		{
-			if (line.contains("grep"))
+			if (line.startsWith("delimiter"))
+			{
+				delimiter = true;
 				continue;
-			destination.add(line.split(" +")[1]);
+			}
+
+			if (delimiter)
+			{
+				if (line.contains("grep"))
+					continue;
+
+				destination.add(line.split(" +")[1]);
+
+			} else
+			{
+				final String [] buffer = line.split(" +");
+				for (final String pid : buffer)
+					destination.add(pid);
+			}
 		}
 
 		return destination;
 	}
 
+	private boolean waitSwitch(final boolean start) throws InterruptedException, Exception
+	{
+
+		for (int i = 0; i < SWITCH_LOOP; i++)
+		{
+			if (i > 0)
+				this.log.info("Waiting for miner to " + (start ? "start" : "stop"));
+
+			Thread.sleep(SWITCH_SLEEP);
+
+			final boolean running = isRunning();
+
+			if (start && running)
+				return true;
+
+			if (!start && !running)
+				return true;
+
+		}
+
+		return false;
+	}
+
+	@Override
 	public synchronized boolean start() throws Exception
 	{
-		final List<String> pids = new ArrayList<>();
-		if (parsePids(pids).size() > 0)
+
+		if (isRunning())
 			return true;
 
 		if (this.startCommand == null)
@@ -86,15 +146,24 @@ public class SSHMiner implements Miner
 		final StringBuilder sbout = new StringBuilder("Start command STDOUT -> ");
 		stdout.forEach(l -> sbout.append("\n").append(l));
 		this.log.fine(sbout.toString());
-		Thread.sleep(3000); // let processes spawn
-		pids.clear();
-		final boolean success = parsePids(pids).size() > 0;
+
+		// let processes spawn
+		final boolean success = waitSwitch(true);
+
+		if (success)
+			synchronized (this.timeLock)
+			{
+				this.startTime = this.clock.get();
+				this.stopTime = null;
+			}
+		clearStatistics();
 		return success;
 	}
 
+	@Override
 	public synchronized boolean stop() throws Exception
 	{
-		final List<String> pids = parsePids(new ArrayList<>());
+		final List<String> pids = parseMainPids(new ArrayList<>());
 
 		if (pids.isEmpty())
 			return true;
@@ -123,15 +192,36 @@ public class SSHMiner implements Miner
 			this.log.fine(sbout.toString());
 		}
 
-		Thread.sleep(3000); // let processes vanish
-		pids.clear();
-		final boolean success = parsePids(pids).isEmpty();
+		// let processes vanish
+		final boolean success = waitSwitch(false);
+
+		if (success)
+			synchronized (this.timeLock)
+			{
+				this.stopTime = this.clock.get();
+				this.startTime = null;
+			}
+
+		clearStatistics();
+
 		return success;
+	}
+
+	@Override
+	public synchronized boolean restart() throws Exception
+	{
+		// stop if running
+		if (isRunning())
+			if (!stop())
+				return false;// could not be stopped
+
+		return start();
+
 	}
 
 	public synchronized boolean isRunning() throws Exception
 	{
-		return parsePids(new ArrayList<>()).size() > 0;
+		return !parseMainPids(new ArrayList<>()).isEmpty();
 	}
 
 	public synchronized void updateStatistics() throws Exception
@@ -139,7 +229,7 @@ public class SSHMiner implements Miner
 		this.log.fine("Updating statistics");
 
 		final MinerStatistics minerStatistics = new MinerStatistics(this.id, this.clock.get());
-		List<String> stdout = this.connector.execute("top -bcn1");
+		List<String> stdout = this.connector.execute("top -bcn2");// tic 2 time. First one are not accurate
 
 		for (final String line : stdout)
 		{
@@ -162,8 +252,17 @@ public class SSHMiner implements Miner
 
 		stdout = this.connector.execute("ps faux | grep mochi");
 
-		for (final String line : stdout)
+		for (String line : stdout)
 		{
+			String [] buffer = line.split(" +");
+
+			// remove username in case it is 'mochimo' or 'gomochi'
+			final StringBuilder sb = new StringBuilder();
+			for (int i = 1; i < buffer.length; i++)
+				sb.append(buffer[i]).append(" ");
+
+			line = sb.toString();
+
 			if (line.contains("grep"))
 				continue;
 
@@ -171,7 +270,7 @@ public class SSHMiner implements Miner
 				minerStatistics.addProcess("gomochi");
 			else
 			{
-				final String [] buffer = line.split("mochimo ");
+				buffer = line.split("mochimo ");
 				if (buffer.length > 1)
 					minerStatistics.addProcess(buffer[1].trim());
 			}
@@ -182,6 +281,7 @@ public class SSHMiner implements Miner
 		minerStatistics.setGomochi(false);
 		minerStatistics.setListen(false);
 		minerStatistics.setSolving(false);
+		minerStatistics.setSyncing(false);
 
 		for (final String process : minerStatistics.getProcesses())
 		{
@@ -191,9 +291,18 @@ public class SSHMiner implements Miner
 				minerStatistics.setListen(true);
 			else if (process.contains("solving"))
 				minerStatistics.setSolving(true);
+			else if (process.contains("update"))
+				minerStatistics.setSyncing(true);
+			else if (process.contains("getblock"))
+				minerStatistics.setSyncing(true);
+			else if (process.contains("coreip"))
+				minerStatistics.setSyncing(true);
+			else if (process.contains("quorum"))
+				minerStatistics.setSyncing(true);
+
 		}
 
-		if (this.logCommand != null)
+		if (!minerStatistics.getProcesses().isEmpty() && this.logCommand != null)
 		{
 			stdout = this.connector.execute(this.logCommand);
 			for (String line : stdout)
@@ -206,7 +315,11 @@ public class SSHMiner implements Miner
 						minerStatistics.setStatistics(buffer[i].substring(0, buffer[i].length() - 1), buffer[i + 1]);
 
 				} else if (line.contains(": 0x"))
-					minerStatistics.setStatistics("Block", "0x" + line.split(": 0x")[1].split(" +")[0]);
+				{
+					final String hex = line.split(": 0x")[1].split(" +")[0];
+					minerStatistics.setStatistics("Block", "0x" + hex);
+					minerStatistics.setStatistics("Height", Integer.toString(Integer.parseInt(hex, 16)));
+				}
 
 			}
 		}
@@ -233,6 +346,134 @@ public class SSHMiner implements Miner
 		{
 			return this.statistics;
 		}
+	}
+
+	@Override
+	public void checkPolicies(final NetworkConsensus networkConsensus) throws Exception
+	{
+		final Duration uptime;
+		final Duration downtime;
+		if (isRunning())
+		{
+			synchronized (this.timeLock)
+			{
+
+				if (this.startTime == null)
+				{
+					if (this.stopTime != null)// dont log on farm start
+						this.log.info("External start detected");
+
+					this.startTime = this.clock.get();
+					uptime = Duration.ZERO;
+				} else
+				{
+					uptime = Duration.between(this.startTime, this.clock.get());
+					this.log.fine("Uptime = " + uptime);
+				}
+
+				this.stopTime = null;
+			}
+			downtime = null;
+		} else
+		{
+			synchronized (this.timeLock)
+			{
+
+				if (this.stopTime == null)
+				{
+					if (this.startTime != null)// dont log on farm start
+						this.log.info("External stop detected");
+					this.stopTime = this.clock.get();
+					downtime = Duration.ZERO;
+				} else
+				{
+					downtime = Duration.between(this.stopTime, this.clock.get());
+					this.log.fine("Downtime = " + downtime);
+				}
+
+				this.startTime = null;
+			}
+
+			uptime = null;
+		}
+
+		final MinerStatistics stat = getStatistics();
+		final Double networkHeight = networkConsensus == null ? null : networkConsensus.getHeight();
+
+		String restartTrigger = null;
+		for (final String policy : getPolicies())
+		{
+			if (restartTrigger != null)
+				break;
+
+			final String upperPolicy = policy.trim().toUpperCase(Locale.ENGLISH);
+			if (upperPolicy.startsWith("MAXDOWNTIME"))
+			{
+				if (downtime == null)
+					continue;
+
+				final String [] buffer = upperPolicy.split(" +");
+
+				Duration delay = Duration.ZERO;
+				delay = Duration.parse("PT" + buffer[1]);
+
+				if (downtime.compareTo(delay) > 0)
+					restartTrigger = "Max Downtime " + delay + " (current downtime = " + downtime + ")";
+
+			} else if (upperPolicy.startsWith("MAXUPTIME"))
+			{
+				if (uptime == null)
+					continue;
+
+				final String [] buffer = upperPolicy.split(" +");
+
+				Duration delay = Duration.ZERO;
+				delay = Duration.parse("PT" + buffer[1]);
+
+				if (uptime.compareTo(delay) > 0)
+					restartTrigger = "Max Uptime " + delay + "(current uptime = " + uptime + ")";
+
+			} else if (upperPolicy.startsWith("MAXLAG"))
+			{
+
+				if (uptime == null /*miner is running*/ || networkHeight == null || stat == null || stat.isDefault() || stat.isSyncing() || !stat.getStatistics().containsKey("Height")
+						|| stat.getAge(this.clock.get()).compareTo(MochimoNetwork.TARGET_BLOCK_TIME) > 0)
+					continue;
+
+				final Integer minerHeight = Integer.parseInt(stat.getStatistics().get("Height"));
+
+				final double lag = networkHeight - minerHeight;
+
+				final String [] buffer = upperPolicy.split(" +");
+
+				final double delay = Double.parseDouble(buffer[1]);
+				if (delay < 1)
+					throw new IllegalArgumentException("Lag policy cannot be less than 1");
+
+				if (lag >= delay)
+					restartTrigger = "Lag " + delay + " (current lag = " + lag + ")";
+			}
+
+		}
+
+		if (restartTrigger != null)
+		{
+			this.log.info("Policy " + restartTrigger + " triggered. Initiating restart.");
+
+			if (restart())
+				this.log.info("Restart sucessfull");
+			else
+				this.log.warning("Restart Failed");
+
+			clearStatistics();
+		}
+
+	}
+
+	@Override
+	public List<String> getPolicies()
+	{
+		return this.policies;
 	}
 
 	public String getId()
@@ -266,4 +507,63 @@ public class SSHMiner implements Miner
 		return this.id;
 	}
 
+	public static void checkPoliciesFormat(final List<String> policies)
+	{
+		for (final String policy : policies)
+			checkPolicyFormat(policy);
+	}
+
+	public static void checkPolicyFormat(final String policy)
+	{
+		try
+		{
+			final String upperPolicy = policy.trim().toUpperCase(Locale.ENGLISH);
+			if (upperPolicy.startsWith("MAXDOWNTIME"))
+			{
+
+				final String [] buffer = upperPolicy.split(" +");
+
+				Duration d = null;
+
+				if (buffer.length < 1)
+					throw new IllegalArgumentException("Could not parse value of Max Downtime policy");
+
+				d = Duration.parse("PT" + buffer[1]);
+
+				if (d.isNegative())
+					throw new IllegalArgumentException("Max Downtime policy value cannot be less than 0");
+
+			} else if (upperPolicy.startsWith("MAXUPTIME"))
+			{
+
+				final String [] buffer = upperPolicy.split(" +");
+
+				Duration d = null;
+
+				if (buffer.length < 1)
+					throw new IllegalArgumentException("Could not parse value of Max Uptime policy");
+
+				d = Duration.parse("PT" + buffer[1]);
+
+				if (d.isNegative())
+					throw new IllegalArgumentException("Max Uptime policy value cannot be less than 0");
+
+			} else if (upperPolicy.startsWith("MAXLAG"))
+			{
+
+				final String [] buffer = upperPolicy.split(" +");
+
+				final double delay = Double.parseDouble(buffer[1]);
+
+				if (delay < 1)
+					throw new IllegalArgumentException("Max Lag policy cannot be less than 1");
+
+			} else
+				throw new IllegalArgumentException("Failed to parse policy '" + policy + "'");
+
+		} catch (final Exception e)
+		{
+			throw new RuntimeException("Check of policy '" + policy + "' failed", e);
+		}
+	}
 }

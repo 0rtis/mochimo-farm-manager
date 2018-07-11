@@ -20,13 +20,45 @@
 				var farm = JSON.parse(json);
 								
 				var totalHPS = document.getElementById("totalHPS");
-				totalHPS.innerHTML ="Total HPS: " + commafy(farm.totalHPS);
+				contribution = null
+				if(farm.networkEstimatedHPS != null)
+				{
+					contribution = (100 * farm.totalHPS / farm.networkEstimatedHPS) + " %"
+				}
+				
+				totalHPS.innerHTML ="Total HPS: " + commafy(farm.totalHPS) +"  ("+ contribution+" of the network)";
 				
 				var totalSolved = document.getElementById("totalSolved");
 				totalSolved.innerHTML ="Total Block Solved: " + commafy(farm.totalSolved);
 				
-				var solvingRate = document.getElementById("solvingRate");
-				solvingRate.innerHTML ="Solving Rate: " + (Math.round(farm.solvingRate * 100) / 100) + " %";
+				var runningCount = document.getElementById("runningCount");
+				rate = null
+				if(farm.runningMiners != null)
+				{
+					rate = 100 * farm.runningMiners / farm.miners.length
+				}
+				runningCount.innerHTML ="Running Node: " + farm.runningMiners + " / " + farm.miners.length+"  (" + round2(rate) + " %)";
+				
+				var solvingCount = document.getElementById("solvingCount");
+				rate = null
+				if(farm.solvingMiners != null)
+				{
+					rate = 100 * farm.solvingMiners / farm.miners.length
+				}
+				solvingCount.innerHTML ="Solving Node: " + farm.solvingMiners + " / " + farm.miners.length +"  (" + round2(rate) + " %)";
+				
+				var networkHeight = document.getElementById("networkHeight");
+				networkHeight.innerHTML ="Network Height Consensus: " + farm.networkHeightConsensus + "  (reward = "+farm.networkBlockReward+" MCM)";
+				
+				var networkDiff = document.getElementById("networkDiff");
+				networkDiff.innerHTML ="Network Diff Consensus: " + farm.networkDifficultyConsensus;
+				
+				var networkHPS = document.getElementById("networkHPS");
+				networkHPS.innerHTML ="Network Estimated HPS: " + commafy(Math.round(farm.networkEstimatedHPS));
+				
+				var timeToReward = document.getElementById("timeToReward");
+				timeToReward.innerHTML ="Estimated Time to Reward: " + farm.humanEstimatedTimeToReward;
+				
 				
 				var tbody=document.createElement('tbody');
 				
@@ -44,7 +76,7 @@
 					var cell = row.insertCell(row.cells.length);
 					if(miner.cpu != null)
 					{
-						cell.innerHTML = Math.round(miner.cpu * 100) / 100
+						cell.innerHTML = round2(miner.cpu)
 						cell.dataset.value = parseFloat(cell.innerHTML);
 					}
 					
@@ -63,15 +95,13 @@
 						cell.dataset.value = cell.innerHTML;
 					}
 
-					
 					var cell = row.insertCell(row.cells.length);
 					if(miner.gomochi !=null)
 					{
 						cell.innerHTML = miner.gomochi;
 						cell.dataset.value = cell.innerHTML;
 					}
-					
-					
+										
 					var cell = row.insertCell(row.cells.length);
 					if(miner.listen !=null)
 					{
@@ -80,9 +110,23 @@
 					}
 					
 					var cell = row.insertCell(row.cells.length);
+					if(miner.syncing !=null)
+					{
+						cell.innerHTML = miner.syncing;
+						cell.dataset.value = cell.innerHTML;
+					}
+					
+					var cell = row.insertCell(row.cells.length);
 					if(miner.solving !=null)
 					{
 						cell.innerHTML = miner.solving;
+						cell.dataset.value = cell.innerHTML;
+					}
+					
+					var cell = row.insertCell(row.cells.length);
+					if(miner.height !=null)
+					{
+						cell.innerHTML = parseFloat(miner.height);
 						cell.dataset.value = cell.innerHTML;
 					}
 					
@@ -139,8 +183,59 @@
 			
 			window.onload=loadMiners;
 			
+			function start()
+			{
+				var xmlHttp = new XMLHttpRequest();
+				xmlHttp.open( "GET", location.origin+"/command?id=farm&cmd=start", false); // false for synchronous request
+				xmlHttp.send();
+				
+				if(xmlHttp.status == 200)
+				{
+					document.getElementById("helper").innerHTML = "Command 'Start Farm' accepted";
+				}else
+				{
+					document.getElementById("helper").innerHTML = "Error: "+xmlHttp.response;
+				}
+				
+			}
+			
+			function stop()
+			{
+				var xmlHttp = new XMLHttpRequest();
+				xmlHttp.open( "GET", location.origin+"/command?id=farm&cmd=stop", false); // false for synchronous request
+				xmlHttp.send();
+				
+				if(xmlHttp.status == 200)
+				{
+					document.getElementById("helper").innerHTML = "Command 'Stop Farm' accepted";
+				}else
+				{
+					document.getElementById("helper").innerHTML = "Error: "+xmlHttp.response;
+				}
+			}
+			
+			function restart()
+			{
+				var xmlHttp = new XMLHttpRequest();
+				xmlHttp.open( "GET", location.origin+"/command?id=farm&cmd=restart", false); // false for synchronous request
+				xmlHttp.send();
+				
+				if(xmlHttp.status == 200)
+				{
+					document.getElementById("helper").innerHTML = "Command 'Restart Farm' accepted";
+				}else
+				{
+					document.getElementById("helper").innerHTML = "Error: "+xmlHttp.response;
+				}
+			}
+			
 			function commafy( num ) 
 			{
+				if(num == null)
+				{
+					return null;
+				}
+				
 				var str = num.toString().split('.');
 				if (str[0].length >= 5) {
 					str[0] = str[0].replace(/(\d)(?=(\d{3})+$)/g, '$1,');
@@ -151,6 +246,15 @@
 				return str.join('.');
 			}
 			
+			function round2( num ) 
+			{
+				if(num == null)
+				{
+					return null;
+				}
+				return Math.round(num * 100) / 100
+			}
+						
 			function sortTable(headerCell)
 			{
 			  var table = headerCell.parentNode.parentNode.parentNode;
@@ -165,7 +269,7 @@
 				{
 					headerCell.dataset.order = 'descending';
 					rows.sort(function(row1, row2) { 
-							if(colIndex ==1 || colIndex ==7 || colIndex ==8)
+							if(colIndex <=1 || colIndex ==7 || colIndex >=9)
 							{
 								return row2.cells[colIndex].dataset.value-row1.cells[colIndex].dataset.value;
 							}
@@ -178,7 +282,7 @@
 				else {
 					rows.sort(function(row1, row2) { 
 						headerCell.dataset.order = 'ascending';
-						if(colIndex ==3 || colIndex ==9 || colIndex ==10)
+						if(colIndex <=1 || colIndex ==7 || colIndex >=9)
 						{
 							return row1.cells[colIndex].dataset.value-row2.cells[colIndex].dataset.value;
 						}
@@ -221,8 +325,22 @@
 	<div id="error" style="color: red;height: 10px;margin-top:5px"></div>
 	<div id="totalHPS" style="margin-top: 5px"></div>
 	<div id="totalSolved" style="margin-top: 5px"></div>
-	<div id="solvingRate" style="margin-top: 5px"></div>
-		<table id="miner-table" style="margin-top: 10px">
+	<div id="runningCount" style="margin-top: 5px"></div>
+	<div id="solvingCount" style="margin-top: 5px"></div>
+	
+	<div id="networkHeight" style="margin-top: 5px"></div>
+	<div id="networkDiff" style="margin-top: 5px"></div>
+	<div id="networkHPS" style="margin-top: 5px"></div>
+	<div id="timeToReward" style="margin-top: 5px"></div>
+	
+	<div style="margin-top:20px">
+		<button id="startButton" type="button" onclick="start()">Start Farm</button>
+		<button id="stopButton" type="button" onclick="stop()">Stop Farm</button>
+		<button id="restartButton" type="button" onclick="restart()">Restart Farm</button>
+		<div id="helper" style="margin-left: 10px; display: inline-block"></div>
+	</div>
+	
+		<table id="miner-table" style="margin-top: 15px">
 			<thead>
 				<tr>
 					<th onclick="sortTable(this);">Id</th>
@@ -230,7 +348,9 @@
 					<th onclick="sortTable(this);">Process</th>
 					<th onclick="sortTable(this);">Gomochi</th>
 					<th onclick="sortTable(this);">Listen</th>
+					<th onclick="sortTable(this);">Sycing</th>
 					<th onclick="sortTable(this);">Solving</th>
+					<th onclick="sortTable(this);">Height</th>
 					<th onclick="sortTable(this);">Block</th>
 					<th onclick="sortTable(this);">Diff</th>
 					<th onclick="sortTable(this);">HPS</th>

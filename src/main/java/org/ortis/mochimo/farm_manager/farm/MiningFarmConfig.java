@@ -1,24 +1,17 @@
 /*******************************************************************************
  * Copyright (C) 2018 Ortis (cao.ortis.org@gmail.com)
  * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without
+ * limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following
+ * conditions:
  * 
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
  ******************************************************************************/
+
 package org.ortis.mochimo.farm_manager.farm;
 
 import java.io.IOException;
@@ -57,15 +50,18 @@ public class MiningFarmConfig
 	private transient final SecretKey key;
 	private final byte [] salt;
 	private final List<MinerConfig> miners;
+	private final List<String> networkConsensuses;
 
 	private List<MinerConfig> roMiners;
 
-	public MiningFarmConfig(final List<MinerConfig> miners, final byte [] salt, final SecretKey key)
+	public MiningFarmConfig(final SecretKey key, final byte [] salt, final List<String> networkConsensuses, final List<MinerConfig> miners)
 	{
 		this.key = key;
 		this.salt = salt;
 		this.miners = new ArrayList<>(miners);
 		this.roMiners = Collections.unmodifiableList(this.miners);
+
+		this.networkConsensuses = networkConsensuses;
 	}
 
 	public MinerConfig getMinerConfig(final String id)
@@ -75,6 +71,11 @@ public class MiningFarmConfig
 				return mc;
 
 		return null;
+	}
+
+	public List<String> getNetworkConsensuses()
+	{
+		return networkConsensuses;
 	}
 
 	public List<MinerConfig> getMinerConfigs()
@@ -98,11 +99,24 @@ public class MiningFarmConfig
 		JsonObject jo = parser.parse(config).getAsJsonObject();
 		final byte [] salt = jo.has("salt") ? (byte []) GSON.fromJson(jo.get("salt").toString(), BYTE_ARRAY_TYPE) : null;
 
-		JsonArray array = jo.get("miners").getAsJsonArray();
+		JsonArray array;
+		final List<String> consensuses = new ArrayList<>();
+		if (jo.has("networkConsensus"))
+		{
+			array = jo.get("networkConsensus").getAsJsonArray();
+			for (int i = 0; i < array.size(); i++)
+				consensuses.add(array.get(i).getAsString());
+
+		}
+
+		array = jo.get("miners").getAsJsonArray();
 
 		final List<MinerConfig> minerConfigs = new ArrayList<>();
 		for (int i = 0; i < array.size(); i++)
 		{
+			if (array.get(i).isJsonNull())
+				break;
+
 			jo = array.get(i).getAsJsonObject();
 			final Map<String, String> map = new LinkedHashMap<>();
 			map.putAll(GSON.fromJson(jo.toString(), MAP_STRING_STRING_TYPE));
@@ -110,7 +124,7 @@ public class MiningFarmConfig
 			minerConfigs.add(minerConfig);
 		}
 
-		final MiningFarmConfig miningFarmConfig = new MiningFarmConfig(minerConfigs, salt, key);
+		final MiningFarmConfig miningFarmConfig = new MiningFarmConfig(key, salt, consensuses, minerConfigs);
 		return miningFarmConfig;
 	}
 

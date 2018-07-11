@@ -33,9 +33,7 @@ import javax.crypto.SecretKey;
 
 import org.ortis.mochimo.farm_manager.Encryption;
 import org.ortis.mochimo.farm_manager.Version;
-import org.ortis.mochimo.farm_manager.farm.MiningFarm;
 import org.ortis.mochimo.farm_manager.farm.MiningFarmConfig;
-import org.ortis.mochimo.farm_manager.http.HttpServer;
 import org.ortis.mochimo.farm_manager.utils.Utils;
 
 import picocli.CommandLine.Command;
@@ -43,7 +41,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 /**
- * Start {@link MiningFarm} and {@link HttpServer}
+ * Decrypt a configuration file
  * 
  * @author Ortis <br>
  *         2018 Jul 03 9:27:34 PM <br>

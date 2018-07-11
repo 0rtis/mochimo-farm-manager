@@ -1,24 +1,17 @@
 /*******************************************************************************
  * Copyright (C) 2018 Ortis (cao.ortis.org@gmail.com)
  * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without
+ * limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following
+ * conditions:
  * 
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
  ******************************************************************************/
+
 package org.ortis.mochimo.farm_manager.http;
 
 import java.io.OutputStream;
@@ -36,6 +29,7 @@ import org.ortis.mochimo.farm_manager.farm.MiningFarm;
 import org.ortis.mochimo.farm_manager.farm.MiningFarmStatistics;
 import org.ortis.mochimo.farm_manager.farm.miner.Miner;
 import org.ortis.mochimo.farm_manager.farm.miner.MinerStatistics;
+import org.ortis.mochimo.farm_manager.http.FarmCommandTask.Command;
 import org.ortis.mochimo.farm_manager.utils.Utils;
 
 import com.google.gson.Gson;
@@ -150,23 +144,13 @@ public class HttpRequestHandler implements HttpHandler
 					} else if (upperPath.equals("/COMMAND"))
 					{
 						final Map<String, String> params = HttpServer.parseQuery(query, new LinkedHashMap<>());
-						final String minerId = params.get("id");
-						if (minerId == null)
+						final String targetId = params.get("id");
+
+						if (targetId == null)
 						{
 							responseCode = 400;
 							responseHeaders.put("Content-type", "application/json");
 							final ErrorBean bean = new ErrorBean("id must be specified");
-							response = GSON.toJson(bean).getBytes();
-							break processRequest;
-						}
-
-						final Miner miner = this.miningFarm.getMiner(minerId);
-
-						if (miner == null)
-						{
-							responseCode = 404;
-							responseHeaders.put("Content-type", "application/json");
-							final ErrorBean bean = new ErrorBean("Miner not found");
 							response = GSON.toJson(bean).getBytes();
 							break processRequest;
 						}
@@ -182,45 +166,106 @@ public class HttpRequestHandler implements HttpHandler
 						}
 
 						final String commandUpper = command.toUpperCase(Locale.ENGLISH);
-						switch (commandUpper)
+
+						if (targetId.toUpperCase(Locale.ENGLISH).equals("FARM"))
+						{// Command sent to the farm
+
+							final Command farmCommand;
+							switch (commandUpper)
+							{
+								case "START":
+									farmCommand = Command.Start;
+									break;
+
+								case "STOP":
+									farmCommand = Command.Stop;
+									break;
+
+								case "RESTART":
+									farmCommand = Command.Restart;
+									break;
+
+								default:
+								{
+
+									responseCode = 400;
+									responseHeaders.put("Content-type", "application/json");
+									final ErrorBean bean = new ErrorBean("Unknown command " + command + " must be specified");
+									response = GSON.toJson(bean).getBytes();
+									break processRequest;
+
+								}
+							}
+
+							final FarmCommandTask fct = new FarmCommandTask(this.miningFarm, farmCommand, this.log);
+							this.log.info("Starting asynchronous command farm task '" + fct.getCommand() + "'");
+							fct.start();
+							responseCode = 200;
+
+						} else
 						{
-							case "START":
 
+							final Miner miner = this.miningFarm.getMiner(targetId);
+
+							if (miner == null)
+							{
+								responseCode = 404;
 								responseHeaders.put("Content-type", "application/json");
-								if (miner.start())
-									responseCode = 200;
-								else
-								{
-									responseCode = 500;
-									final ErrorBean bean = new ErrorBean("Starting failed");
-									response = GSON.toJson(bean).getBytes();
-								}
-								miner.clearStatistics();
-								break;
-
-							case "STOP":
-
-								responseHeaders.put("Content-type", "application/json");
-								if (miner.stop())
-									responseCode = 200;
-								else
-								{
-									responseCode = 500;
-									final ErrorBean bean = new ErrorBean("Stopping failed");
-									response = GSON.toJson(bean).getBytes();
-								}
-								miner.clearStatistics();
-								break;
-
-							default:
-								responseCode = 400;
-								responseHeaders.put("Content-type", "application/json");
-								final ErrorBean bean = new ErrorBean("Command not found");
+								final ErrorBean bean = new ErrorBean("Miner not found");
 								response = GSON.toJson(bean).getBytes();
+								break processRequest;
+							}
+							responseHeaders.put("Content-type", "application/json");
+							switch (commandUpper)
+							{
+								case "START":
 
-								break;
+									if (miner.start())
+										responseCode = 200;
+									else
+									{
+										responseCode = 500;
+										final ErrorBean bean = new ErrorBean("Starting failed");
+										response = GSON.toJson(bean).getBytes();
+									}
+									miner.clearStatistics();
+									break;
+
+								case "STOP":
+
+									if (miner.stop())
+										responseCode = 200;
+									else
+									{
+										responseCode = 500;
+										final ErrorBean bean = new ErrorBean("Stopping failed");
+										response = GSON.toJson(bean).getBytes();
+									}
+									miner.clearStatistics();
+									break;
+
+								case "RESTART":
+
+									if (miner.restart())
+										responseCode = 200;
+									else
+									{
+										responseCode = 500;
+										final ErrorBean bean = new ErrorBean("Restart failed");
+										response = GSON.toJson(bean).getBytes();
+									}
+									miner.clearStatistics();
+									break;
+
+								default:
+									responseCode = 400;
+
+									final ErrorBean bean = new ErrorBean("Command not found");
+									response = GSON.toJson(bean).getBytes();
+
+									break;
+							}
 						}
-
 					} else
 					{
 						responseCode = 404;

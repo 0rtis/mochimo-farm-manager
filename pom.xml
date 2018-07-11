@@ -5,7 +5,7 @@
   <name>farm_manager</name>
   <groupId>org.ortis.mochimo</groupId>
   <artifactId>mochimo-farm-manager</artifactId>
-  <version>0.3</version>
+  <version>0.4</version>
   <packaging>jar</packaging>
 
 
@@ -61,7 +61,7 @@
  	<dependency>
   		<groupId>info.picocli</groupId>
   		<artifactId>picocli</artifactId>
-  		<version>3.0.0-beta-2</version>
+  		<version>3.0.2</version>
 	</dependency>
 	
 	<dependency>
@@ -74,6 +74,12 @@
     	<groupId>com.jcraft</groupId>
     	<artifactId>jsch</artifactId>
     	<version>0.1.54</version>
+	</dependency>
+	
+	<dependency>
+    	<groupId>org.jsoup</groupId>
+    	<artifactId>jsoup</artifactId>
+    	<version>1.11.3</version>
 	</dependency>
   
 	<dependency>

@@ -25,14 +25,31 @@ public class MiningFarmStatisticsBean
 
 	public final Double totalHPS;
 	public final Integer totalSolved;
-	public final Double solvingRate;
+	public final Integer solvingMiners;
+	public final Integer runningMiners;
+
+	public final Double networkHeightConsensus;
+	public final Double networkBlockReward;
+	public final Double networkDifficultyConsensus;
+	public final Double networkEstimatedHPS;
+	public final Long estimatedTimeToReward;
+	public final String humanEstimatedTimeToReward;
+
 	public final List<MinerStatisticsBean> miners;
 
 	public MiningFarmStatisticsBean(final MiningFarmStatistics statistics)
 	{
 		this.totalHPS = statistics.getTotalHPS();
 		this.totalSolved = statistics.getTotalSolved();
-		this.solvingRate = statistics.getSolvingRate();
+		this.solvingMiners = statistics.getSolvingMiners();
+		this.runningMiners = statistics.getRunningMiners();
+
+		this.networkHeightConsensus = statistics.getNetworkHeightConsensus();
+		this.networkDifficultyConsensus = statistics.getNetworkDifficultyConsensus();
+		this.networkBlockReward = statistics.getNetworkBlockReward();
+		this.networkEstimatedHPS = statistics.getNetworkEstimatedHPS();
+		this.estimatedTimeToReward = statistics.getEstimatedTimeToReward();
+		this.humanEstimatedTimeToReward = statistics.getHumanEstimatedTimeToReward();
 
 		this.miners = new ArrayList<>();
 		for (final MinerStatistics stat : statistics.getMiners())

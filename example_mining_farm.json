@@ -1,4 +1,6 @@
 {
+	"networkConsensus":["bx.mochimo.org"],	
+	
     "miners": [
         {
             "id": "miner1",
@@ -8,7 +10,8 @@
             "password": "mypassword",
             "startCommand": "/home/myuser/start.sh",
             "stopCommand": null,
-            "logCommand": "awk '/: 0x/ {a=$0} END{print a}'  /home/myuser/mochi/bin/miner.log && awk '/Solved/ {a=$0} END{print a}'  /home/myuser/mochi/bin/miner.log"
+            "logCommand": "awk '/: 0x/ {a=$0} END{print a}'  /home/myuser/mochi/bin/miner.log ; awk '/Solved/ {a=$0} END{print a}'  /home/myuser/mochi/bin/miner.log",
+			"policy": "maxLag 3, maxDowntime 30M"
         },
         {
             "id": "miner2",
@@ -18,7 +21,8 @@
             "password": "mypassword",
             "startCommand": "/home/myuser/start.sh",
             "stopCommand": null,
-            "logCommand": "awk '/: 0x/ {a=$0} END{print a}'  /home/myuser/mochi/bin/miner.log ; awk '/Solved/ {a=$0} END{print a}'  /home/myuser/mochi/bin/miner.log"
+            "logCommand": "awk '/: 0x/ {a=$0} END{print a}'  /home/myuser/mochi/bin/miner.log ; awk '/Solved/ {a=$0} END{print a}'  /home/myuser/mochi/bin/miner.log",
+			"policy": "maxLag 3, maxDowntime 30M"
         }
     ]
 }

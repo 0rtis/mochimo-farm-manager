@@ -1,11 +1,9 @@
 
-package org.ortis.mochimo.farm_manager.farm;
-
-import java.util.concurrent.Callable;
+package org.ortis.mochimo.farm_manager.farm.tasks;
 
 import org.ortis.mochimo.farm_manager.farm.miner.Miner;
 
-public class StatisticsUpdateTask implements Callable<Void>
+public class StatisticsUpdateTask implements MinerTask
 {
 	private final Miner miner;
 
@@ -18,6 +16,7 @@ public class StatisticsUpdateTask implements Callable<Void>
 
 	}
 
+	@Override
 	public boolean acquire(final Object bidder)
 	{
 		synchronized (this.lock)
@@ -41,6 +40,7 @@ public class StatisticsUpdateTask implements Callable<Void>
 		return null;
 	}
 
+	@Override
 	public Miner getMiner()
 	{
 		return miner;
@@ -55,7 +55,7 @@ public class StatisticsUpdateTask implements Callable<Void>
 	@Override
 	public boolean equals(final Object o)
 	{
-		if (o == this.miner)
+		if (o == this)
 			return true;
 
 		if (o instanceof StatisticsUpdateTask)
@@ -68,10 +68,9 @@ public class StatisticsUpdateTask implements Callable<Void>
 		return false;
 	}
 
-	
 	@Override
 	public String toString()
 	{
-		return this.miner.getId() + " update task";
+		return this.miner.getId() + "@" + this.getClass().getSimpleName();
 	}
 }

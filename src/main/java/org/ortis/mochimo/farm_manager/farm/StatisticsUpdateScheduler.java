@@ -16,11 +16,16 @@ package org.ortis.mochimo.farm_manager.farm;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 import org.ortis.mochimo.farm_manager.farm.miner.Miner;
 import org.ortis.mochimo.farm_manager.farm.miner.MinerStatistics;
+import org.ortis.mochimo.farm_manager.farm.tasks.StatisticsUpdateTask;
+import org.ortis.mochimo.farm_manager.farm.tasks.TaskBoard;
+import org.ortis.mochimo.farm_manager.farm.tasks.TaskWorker;
 import org.ortis.mochimo.farm_manager.utils.Utils;
 
 /**
@@ -35,9 +40,11 @@ public class StatisticsUpdateScheduler implements Runnable
 	private final MiningFarm farm;
 	private final Duration checkHeartbeat;
 	private final Duration updateHeartbeat;
-	private final TaskBoard taskBoard;
 	private final Supplier<LocalDateTime> clock;
 	private Logger log;
+
+	private final TaskBoard taskBoard;
+	private final ExecutorService pool;
 
 	/**
 	 * 
@@ -51,8 +58,7 @@ public class StatisticsUpdateScheduler implements Runnable
 	 *            pending update queue
 	 * @param log
 	 */
-	public StatisticsUpdateScheduler(final MiningFarm farm, final Duration checkHeartbeat, final Duration updateHeartbeat, final TaskBoard taskBoard, final Supplier<LocalDateTime> clock,
-			final Logger log)
+	public StatisticsUpdateScheduler(final MiningFarm farm, final Duration checkHeartbeat, final Duration updateHeartbeat, final int parallelism, final Supplier<LocalDateTime> clock, final Logger log)
 	{
 		this.farm = farm;
 		this.checkHeartbeat = checkHeartbeat;
@@ -63,9 +69,19 @@ public class StatisticsUpdateScheduler implements Runnable
 		if (this.updateHeartbeat.isNegative() || this.updateHeartbeat.isZero())
 			throw new IllegalArgumentException("Update heartbeat duration must be positive");
 
-		this.taskBoard = taskBoard;
 		this.clock = clock;
 		this.log = log;
+
+		if (parallelism < 1)
+			throw new IllegalArgumentException("Parallelism cannot be less than 1");
+
+		this.taskBoard = new TaskBoard(Duration.ofMillis(1000), log);
+		this.pool = Executors.newFixedThreadPool(parallelism);
+		for (int i = 0; i < parallelism; i++)
+		{
+			final TaskWorker su = new TaskWorker(this.taskBoard, log);
+			this.pool.submit(su);
+		}
 
 	}
 
@@ -94,7 +110,7 @@ public class StatisticsUpdateScheduler implements Runnable
 					{
 
 						this.log.fine("Requesting update for miner " + miner);
-						this.taskBoard.add(miner);
+						this.taskBoard.add(new StatisticsUpdateTask(miner));
 					}
 
 				}
@@ -105,7 +121,7 @@ public class StatisticsUpdateScheduler implements Runnable
 
 				final long sleep = this.checkHeartbeat.toMillis() - elapsed;
 				if (sleep <= 0)
-					this.log.warning("Check run took longer than " + this.checkHeartbeat);
+					this.log.warning("Update took longer than " + this.checkHeartbeat);
 				else
 					Thread.sleep(sleep);
 
@@ -120,6 +136,7 @@ public class StatisticsUpdateScheduler implements Runnable
 			this.log.severe(Utils.formatException(e));
 		} finally
 		{
+			this.pool.shutdownNow();
 			this.log.info("Stopped");
 		}
 	}

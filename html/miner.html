@@ -36,6 +36,7 @@
 					{
 						document.getElementById("startButton").disabled = true;
 						document.getElementById("stopButton").disabled = true;
+						document.getElementById("restartButton").disabled = true;
 						document.getElementById("helper").innerHTML = "Waiting for statistics...";
 						
 						continue loop;
@@ -43,6 +44,7 @@
 					{
 						document.getElementById("startButton").disabled = false;
 						document.getElementById("stopButton").disabled = false;
+						document.getElementById("restartButton").disabled = false;
 						document.getElementById("helper").innerHTML = "";
 					}
 					
@@ -86,35 +88,50 @@
 							}
 						break;
 						
-						case 5://Solving
+						case 5://Sycing
+							if(miner.listen != null)
+							{
+								cell.innerHTML = miner.syncing
+							}
+						break;
+						
+						case 6://Solving
 							if(miner.solving != null)
 							{
 								cell.innerHTML = miner.solving
 							}
 						break;
 						
-						case 6://Block
+						case 7://Height
+							if(miner.height != null)
+							{
+								cell.innerHTML = miner.height
+							}
+						break;
+						
+						
+						case 8://Block
 							if(miner.block != null)
 							{
 								cell.innerHTML = miner.block
 							}
 						break;
 						
-						case 7://Difficulty
+						case 9://Difficulty
 							if(miner.difficulty != null)
 							{
 								cell.innerHTML = miner.difficulty
 							}
 						break;
 						
-						case 8://HPS
+						case 10://HPS
 							if(miner.hps != null)
 							{
 								cell.innerHTML = commafy(miner.hps)
 							}
 						break;
 						
-						case 9://Solved
+						case 11://Solved
 							if(miner.solved != null)
 							{
 								cell.innerHTML = miner.solved
@@ -180,6 +197,14 @@
 				console.log("stop command http code: "+xmlHttp.status)
 			}
 			
+			function restart()
+			{
+				var xmlHttp = new XMLHttpRequest();
+				xmlHttp.open( "GET", location.origin+"/command?id="+miner_id+"&cmd=restart", false); // false for synchronous request
+				xmlHttp.send();
+				console.log("restart command http code: "+xmlHttp.status)
+			}
+			
 		</script>
 		<style>
 			table {
@@ -207,6 +232,7 @@
 	<div >
 		<button id="startButton" type="button" onclick="start()">Start</button>
 		<button id="stopButton" type="button" onclick="stop()">Stop</button>
+		<button id="restartButton" type="button" onclick="restart()">Restart</button>
 		<div id="helper" style="margin-left: 10px; display: inline-block"></div>
 	</div>
 	
@@ -229,7 +255,13 @@
 				<th align="left">Listen</th>
 			</tr>
 			<tr>
+				<th align="left">Syncing</th>
+			</tr>
+			<tr>
 				<th align="left">Solving</th>
+			</tr>
+			<tr>
+				<th align="left">Height</th>
 			</tr>
 			<tr>
 				<th align="left">Block</th>

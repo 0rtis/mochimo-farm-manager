@@ -15,10 +15,6 @@
 package org.ortis.mochimo.farm_manager.farm;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -28,11 +24,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import javax.crypto.BadPaddingException;
@@ -45,10 +37,10 @@ import org.ortis.mochimo.farm_manager.farm.miner.Miner;
 import org.ortis.mochimo.farm_manager.farm.miner.MinerConfig;
 import org.ortis.mochimo.farm_manager.farm.miner.SSHConnector;
 import org.ortis.mochimo.farm_manager.farm.miner.SSHMiner;
-import org.ortis.mochimo.farm_manager.http.HttpRequestHandler;
-import org.ortis.mochimo.farm_manager.http.HttpServer;
 import org.ortis.mochimo.farm_manager.log.LogFactory;
-import org.ortis.mochimo.farm_manager.log.LogListener;
+import org.ortis.mochimo.farm_manager.network.consensus.NetworkConsensus;
+import org.ortis.mochimo.farm_manager.network.consensus.NetworkConsensusFactory;
+import org.ortis.mochimo.farm_manager.network.consensus.NetworkConsensusUpdater;
 import org.ortis.mochimo.farm_manager.utils.Host;
 
 import com.jcraft.jsch.JSchException;
@@ -65,13 +57,17 @@ public class MiningFarm
 	private final Logger log;
 
 	private Thread statisticUpdateSchedulerThread;
-	private final ExecutorService statisticsPool;
+	private Thread watchDogThread;
+
 	private final List<Miner> miners;
 	private final List<Miner> roMiners;
 
-	public MiningFarm(final MiningFarmConfig config, final Duration statisticsUpdateHeartbeat, final int statisticsParallelism, final Supplier<LocalDateTime> clock, final Logger log)
-			throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException,
-			BadPaddingException, JSchException
+	private final NetworkConsensus networkConsensus;
+	private Thread networkConsensusUpdateThread;
+
+	public MiningFarm(final MiningFarmConfig config, final Duration statisticsUpdateHeartbeat, final int statisticsParallelism, final Duration watchDogHeartbeat, final int watchDogParallelism,
+			final Duration networkConsensusUpdateHeartbeat, final Supplier<LocalDateTime> clock, final Logger log) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException,
+			InvalidKeyException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, JSchException
 	{
 
 		this.clock = clock;
@@ -108,23 +104,35 @@ public class MiningFarm
 			final String startCommand = parseField(id, minerConfig, "startCommand", key);
 			final String stopCommand = parseField(id, minerConfig, "stopCommand", key);
 			final String logCommand = parseField(id, minerConfig, "logCommand", key);
+			final List<String> policies = parseArrayField(id, minerConfig, "policy", key);
 
 			final SSHConnector connector = new SSHConnector(id, host.getHostname(), host.getPort(), user, password, privateKey, LogFactory.getLogger(id + "-SSHConnector"));
-			final SSHMiner miner = new SSHMiner(id, startCommand, stopCommand, logCommand, connector, this.clock, LogFactory.getLogger(id + "-Miner"));
+			final SSHMiner miner = new SSHMiner(id, startCommand, stopCommand, logCommand, policies, connector, this.clock, LogFactory.getLogger(id + "-Miner"));
 			this.miners.add(miner);
 		}
 
-		final TaskBoard taskBoard = new TaskBoard(Duration.ofMillis(1000), LogFactory.getLogger("TaskBoard"));
-		this.statisticUpdateSchedulerThread = new Thread(
-				new StatisticsUpdateScheduler(this, Duration.ofMillis(Math.max(1000, statisticsUpdateHeartbeat.toMillis() / 10)), statisticsUpdateHeartbeat, taskBoard, this.clock, log));
-		this.statisticUpdateSchedulerThread.setName("StatisticsUpdateScheduler");
-		this.statisticsPool = Executors.newFixedThreadPool(statisticsParallelism);
+		// set watchdog
+		final WatchDog watchDog = new WatchDog(this, watchDogHeartbeat, watchDogParallelism, this.log);
+		this.watchDogThread = new Thread(watchDog);
+		this.watchDogThread.setName("WatchDog");
 
-		for (int i = 0; i < statisticsParallelism; i++)
+		// set consensus
+		if (config.getNetworkConsensuses().isEmpty())
 		{
-			final StatisticsUpdater su = new StatisticsUpdater(taskBoard, log);
-			this.statisticsPool.submit(su);
+			this.networkConsensus = NetworkConsensusFactory.getDefaultNetworkConsensus();
+			this.log.info("Using default network consensus " + this.networkConsensus);
+		} else
+		{
+			this.networkConsensus = NetworkConsensusFactory.get(config.getNetworkConsensuses(), this);
+			this.log.info("Using network consensus " + this.networkConsensus);
 		}
+
+		this.networkConsensusUpdateThread = new Thread(new NetworkConsensusUpdater(this.networkConsensus, networkConsensusUpdateHeartbeat, log));
+		this.networkConsensusUpdateThread.setName("NetworkConsensusUpdater");
+
+		this.statisticUpdateSchedulerThread = new Thread(
+				new StatisticsUpdateScheduler(this, Duration.ofMillis(Math.max(1000, statisticsUpdateHeartbeat.toMillis() / 10)), statisticsUpdateHeartbeat, statisticsParallelism, this.clock, log));
+		this.statisticUpdateSchedulerThread.setName("StatisticsUpdateScheduler");
 
 	}
 
@@ -148,6 +156,35 @@ public class MiningFarm
 
 	}
 
+	private List<String> parseArrayField(final String id, final MinerConfig minerConfig, final String field, final SecretKey key)
+			throws InvalidKeyException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
+	{
+
+		final List<String> array = new ArrayList<>();
+
+		final FieldConfig cf = minerConfig.get(field);
+		if (cf == null)
+			return array;
+
+		final String serial;
+		if (cf.isEncrytped())
+		{
+			serial = Encryption.decrypt(cf.getValue(), key);
+
+		} else
+		{
+			this.log.warning("Field " + id + "@" + cf.getName() + " is in plain text");
+			serial = cf.getValue();
+		}
+
+		final String [] entries = serial.trim().split(",|;");
+		for (final String entry : entries)
+			array.add(entry.trim());
+
+		return array;
+
+	}
+
 	public MiningFarmStatistics statistics()
 	{
 		return new MiningFarmStatistics(this);
@@ -157,14 +194,16 @@ public class MiningFarm
 	{
 		this.log.info("Starting statistics updater");
 		this.statisticUpdateSchedulerThread.start();
-
+		this.watchDogThread.start();
+		this.networkConsensusUpdateThread.start();
 	}
 
 	public void stop()
 	{
 		this.log.info("Stopping statistics updater");
 		this.statisticUpdateSchedulerThread.interrupt();
-
+		this.watchDogThread.interrupt();
+		this.networkConsensusUpdateThread.interrupt();
 	}
 
 	public Miner getMiner(final String id)
@@ -182,55 +221,9 @@ public class MiningFarm
 		return this.roMiners;
 	}
 
-	public static void main(String [] args) throws Exception
+	public NetworkConsensus getNetworkConsensus()
 	{
-
-		final Supplier<LocalDateTime> clock = new Supplier<LocalDateTime>()
-		{
-
-			@Override
-			public LocalDateTime get()
-			{
-				return LocalDateTime.now();
-			}
-		};
-
-		LogFactory.setLevel(Level.INFO);
-		LogFactory.addLogListener(new LogListener()
-		{
-
-			@Override
-			public void onLog(LogRecord record)
-			{
-
-				System.out.println(LogFactory.format(clock.get(), record));
-			}
-		});
-		// parse config
-		final Path p = Paths.get("pool-configs\\prod_mining_pool.json");
-		final Path html = Paths.get("html");
-		final String json = new String(Files.readAllBytes(p));
-		final MiningFarmConfig mfc = MiningFarmConfig.parse(json, null);
-
-		MiningFarm farm = new MiningFarm(mfc, Duration.ofSeconds(20), 3, clock, LogFactory.getLogger("farm"));
-		farm.start();
-
-		String host = "127.0.0.1:8888";
-
-		final ExecutorService httpPool = Executors.newFixedThreadPool(3);
-
-		int port = 80;
-		if (host.contains(":"))
-		{
-			final String [] buffer = host.split(":");
-			port = Integer.parseInt(buffer[buffer.length - 1]);
-			host = host.substring(0, host.length() - buffer[buffer.length - 1].length() - 1);
-		}
-
-		HttpServer httpServer = new HttpServer(new InetSocketAddress(host, port), httpPool);
-		httpServer.addContext("/", new HttpRequestHandler(farm, html, LogFactory.getLogger("HttpRequestHandler")));
-
-		httpServer.start();
+		return this.networkConsensus;
 	}
 
 }

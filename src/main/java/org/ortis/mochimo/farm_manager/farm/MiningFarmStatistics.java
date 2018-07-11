@@ -20,12 +20,22 @@ import java.util.Map;
 
 import org.ortis.mochimo.farm_manager.farm.miner.Miner;
 import org.ortis.mochimo.farm_manager.farm.miner.MinerStatistics;
+import org.ortis.mochimo.farm_manager.network.MochimoNetwork;
 
 public class MiningFarmStatistics
 {
 	private final Double totalHPS;
 	private final Integer totalSolved;
-	private final Double solvingRate;
+	private final Integer solvingMiners;
+	private final Integer runningMiners;
+
+	private final Double networkHeightConsensus;
+	private final Double networkDifficultyConsensus;
+	private final Double networkBlockReward;
+	private final Double networkEstimatedHPS;
+	private final Long estimatedTimeToReward;
+	private final String humanEstimatedTimeToReward;
+
 	private final List<MinerStatistics> miners;
 
 	public MiningFarmStatistics(final MiningFarm farm)
@@ -35,6 +45,8 @@ public class MiningFarmStatistics
 		double totalHPS = 0;
 		int totalSolved = 0;
 		int solving = 0;
+		int running = 0;
+
 		for (final Miner miner : farm.getMiners())
 		{
 			final MinerStatistics stat = miner.getStatistics();
@@ -44,9 +56,12 @@ public class MiningFarmStatistics
 			if (stat.isDefault())
 				continue;// dont aggregate if default statistics
 
+			if (stat.isRunning())
+				running++;
+
 			for (final Map.Entry<String, String> entry : stat.getStatistics().entrySet())
 			{
-				if (entry.getKey().contains("aiku/second"))
+				if (stat.isSolving() && entry.getKey().contains("aiku/second"))
 					totalHPS += Double.parseDouble(entry.getValue());
 				else if (entry.getKey().contains("olved"))
 					totalSolved += Integer.parseInt(entry.getValue());
@@ -61,14 +76,24 @@ public class MiningFarmStatistics
 		{
 			this.totalHPS = 0d;
 			this.totalSolved = 0;
-			this.solvingRate = 0d;
+			this.solvingMiners = 0;
+			this.runningMiners = 0;
 		} else
 		{
 			this.totalHPS = totalHPS;
 			this.totalSolved = totalSolved;
-			this.solvingRate = 100d * solving / this.miners.size();
+			this.solvingMiners = solving;
+			this.runningMiners = running;
 		}
 
+		this.networkHeightConsensus = farm.getNetworkConsensus().getHeight();
+		this.networkDifficultyConsensus = farm.getNetworkConsensus().getDifficulty();
+
+		this.networkBlockReward = this.networkHeightConsensus == null ? null : MochimoNetwork.miningReward(this.networkHeightConsensus.intValue());
+
+		this.networkEstimatedHPS = this.networkDifficultyConsensus == null ? null : MochimoNetwork.totalHPS(this.networkDifficultyConsensus);
+		this.estimatedTimeToReward = this.networkEstimatedHPS == null || this.totalHPS == null ? null : MochimoNetwork.timeToReward(this.totalHPS, this.networkEstimatedHPS);
+		this.humanEstimatedTimeToReward = this.estimatedTimeToReward == null ? null : MochimoNetwork.humanTimeToReward(this.estimatedTimeToReward);
 	}
 
 	public Double getTotalHPS()
@@ -76,9 +101,9 @@ public class MiningFarmStatistics
 		return totalHPS;
 	}
 
-	public Double getSolvingRate()
+	public Integer getSolvingMiners()
 	{
-		return solvingRate;
+		return solvingMiners;
 	}
 
 	public Integer getTotalSolved()
@@ -90,4 +115,40 @@ public class MiningFarmStatistics
 	{
 		return miners;
 	}
+
+	public Long getEstimatedTimeToReward()
+	{
+		return estimatedTimeToReward;
+	}
+
+	public String getHumanEstimatedTimeToReward()
+	{
+		return humanEstimatedTimeToReward;
+	}
+
+	public Double getNetworkBlockReward()
+	{
+		return networkBlockReward;
+	}
+
+	public Double getNetworkDifficultyConsensus()
+	{
+		return networkDifficultyConsensus;
+	}
+
+	public Double getNetworkEstimatedHPS()
+	{
+		return networkEstimatedHPS;
+	}
+
+	public Double getNetworkHeightConsensus()
+	{
+		return networkHeightConsensus;
+	}
+
+	public Integer getRunningMiners()
+	{
+		return runningMiners;
+	}
+
 }
