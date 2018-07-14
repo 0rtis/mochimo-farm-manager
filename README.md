@@ -61,7 +61,7 @@ Mochimo Farm Manager is performing an [SSH](https://en.wikipedia.org/wiki/Secure
 
 ##### Part 1 - Configure the miner
 
-1. Edit **start.sh** and set the path to the bin folder of the miner (ex: /home/mysuer/mochi/bin)
+1. Edit **start.sh** and set the path to the bin folder of the miner (ex: `/home/mysuer/mochi/bin`)
 2. Upload **start.sh** to your miner's host. Even though the location does not matter, I recommend the bin folder
 3. Give executing permission to **start.sh** `chmod +x start.sh`
 4. Run `./start.sh` on the miner's host. This command will create a file name `miner.log` that contains the output of the running miner. You will not be able to interact with the miner at this point but you can still monitor it by reading the content of `miner.log`. Use the command `tail -f -n100 miner.log` to read the log (it will update automatically when a new line is written)
@@ -70,10 +70,10 @@ Mochimo Farm Manager is performing an [SSH](https://en.wikipedia.org/wiki/Secure
 ##### Part 2 - Configure Mochimo Farm Manager
 
 1. Install [Java](https://java.com/en/download/) (version 8 or higher)
-2. Download the latest release of Mochimo Farm Manger [here](https://github.com/0rtis/mochimo-farm-manager/releases)
+2. Download the latest release of Mochimo Farm Manger [here](https://github.com/0rtis/mochimo-farm-manager/releases). *Note*: the executable `jar` `mochimo-farm-manager-version.jar` is only available in the release package. If you clone the repository, you will need to build the `jar` yourself with [Maven](https://maven.apache.org/)
 3. Create a farm configuration file based on the example `example_mining_farm.json`:
 	* `networkConsensus`: specify the method to compute the network consensus
-		1. `bx.mochimo.org`: use https://bx.mochimo.org/ (this is the default method)
+		1. `bx.mochimo.org`: uses https://bx.mochimo.org/ (this is the default method)
 		2. `farm`: average statistics from each miner
 		3. `miner MINER_ID`: use statistics from miner MINER_ID
 	* `id`: unique ID of the miner
@@ -89,7 +89,7 @@ Mochimo Farm Manager is performing an [SSH](https://en.wikipedia.org/wiki/Secure
 		3. `maxUptime AMOUNT`: reboot the miner after AMOUNT of time
 		
         <div>
-        Triggers can be combined to create a `policy`. For example `"policy":"maxLag 3, maxDowntime 1H, maxUptime 12H"`:
+        Triggers can be combined to create a policy. For example -> "policy":"maxLag 3, maxDowntime 1H, maxUptime 12H":
         - Reboot if the height difference reaches 3
         - Start if downtime reaches 1 hour
         - Reboot if the uptime reaches 12 hours
@@ -97,7 +97,7 @@ Mochimo Farm Manager is performing an [SSH](https://en.wikipedia.org/wiki/Secure
     
     
 4. *Higly Recommended*: encrypt your configuration file `java -jar mochimo-farm-manager-version.jar encrypt plain_text_config.json encrypted_config.json`
-5. Start the famr manager `java -jar mochimo-farm-manager-version.jar start mining_farm_config.json html`
+5. Start the farm manager `java -jar mochimo-farm-manager-version.jar start mining_farm_config.json html`
 6. Access the dashboard http://localhost:8888
 
 There are several start option available. Make sure to check them out `java -jar mochimo-farm-manager-version.jar start -h`

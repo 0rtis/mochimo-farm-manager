@@ -36,7 +36,7 @@ import org.ortis.mochimo.farm_manager.network.consensus.NetworkConsensus;
 public class SSHMiner implements Miner
 {
 	private final static long SWITCH_SLEEP = 3000;
-	private final static int SWITCH_LOOP = 3;
+	private final static int SWITCH_LOOP = 10;
 
 	private final String id;
 	private final String startCommand;

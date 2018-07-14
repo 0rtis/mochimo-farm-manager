@@ -75,8 +75,8 @@ public class SSHConnector
 			session.setPassword(this.password);
 
 		this.log.finer("Connecting to " + this.id);
-		session.setTimeout(10000);
-		session.connect(10000);
+		session.setTimeout(30000);
+		session.connect(30000);
 		if (session.isConnected())
 			this.log.finer("Connected to " + this.id);
 		else
