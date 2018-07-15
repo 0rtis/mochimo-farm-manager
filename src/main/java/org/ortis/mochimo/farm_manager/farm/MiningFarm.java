@@ -86,6 +86,8 @@ public class MiningFarm
 			if (ids.contains(cfid.getValue()))
 				throw new IllegalArgumentException("Duplicate miner id " + id);
 
+			ids.add(cfid.getValue());
+
 			this.log.fine("Building miner " + cfid.getValue());
 
 			final String hostString = parseField(id, minerConfig, "host", key);
