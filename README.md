@@ -88,16 +88,16 @@ Mochimo Farm Manager is performing an [SSH](https://en.wikipedia.org/wiki/Secure
 		2. `maxDowntime AMOUNT`: start the miner if it has been down more than AMOUNT of time. AMOUNT can be seconds, minutes or hours (ex: `30s`, `5M`, `3H`)
 		3. `maxUptime AMOUNT`: reboot the miner after AMOUNT of time
 		
-        <div>
-        Triggers can be combined to create a policy. For example -> "policy":"maxLag 3, maxDowntime 1H, maxUptime 12H":
+        
+        Triggers can be combined to create a policy. For example -> `"policy":"maxLag 3, maxDowntime 1H, maxUptime 12H"`:
         - Reboot if the height difference reaches 3
         - Start if downtime reaches 1 hour
         - Reboot if the uptime reaches 12 hours
-        </div>
-    
+        
+    	Check the formatting of your config file in a [JSON validator](https://jsonlint.com/) (Remove sensitive information before doing so). A badly formatted config file will generate an error when starting the farm manager (`com.google.gson.JsonSyntaxException`)
     
 4. *Higly Recommended*: encrypt your configuration file `java -jar mochimo-farm-manager-version.jar encrypt plain_text_config.json encrypted_config.json`
-5. Start the farm manager `java -jar mochimo-farm-manager-version.jar start mining_farm_config.json html`
+5. Start the farm manager `java -jar [path to the mochimo farm manager jar] start [path to your config file] [path to the html folder]` <br/> For example `java -jar "C:/Users/ortis/Downloads/mochimo-farm-manager-0.5/mochimo-farm-manager-0.5.jar" start "C:/Users/ortis/Downloads/mochimo-farm-manager-0.5/my_farm.json" "C:/Users/ortis/Downloads/mochimo-farm-manager-0.5/html"`
 6. Access the dashboard http://localhost:8888
 
 There are several start option available. Make sure to check them out `java -jar mochimo-farm-manager-version.jar start -h`

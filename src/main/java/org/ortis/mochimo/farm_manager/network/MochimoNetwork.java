@@ -52,11 +52,11 @@ public class MochimoNetwork
 	 */
 	public static long timeToReward(final double miningHPS, final double networkHPS)
 	{
-		final double expectedRewardPerDay = miningHPS / networkHPS * 256;
+		final double expectedSolvePerDay = miningHPS / networkHPS * 256;
 
-		final double daysBeforeReward = 1 / expectedRewardPerDay;
+		final double daysBeforeSolve = 1 / expectedSolvePerDay;
 
-		return (long) (daysBeforeReward * 24 * 60 * 60 * 1000);
+		return (long) (daysBeforeSolve * 24 * 60 * 60 * 1000);
 
 	}
 
@@ -79,22 +79,24 @@ public class MochimoNetwork
 
 	}
 
-	public static double miningReward(final int height)
+	public static double miningReward(int height)
 	{
-		double reward = 0;
-		if (height <= 373760)
-		{
-			reward = 5;
-			for (int i = 0; i < height; i++)
-				reward += .000199637;
-		} else if (height <= 1586265)
-		{
-			reward = 79.616325120;
-			for (int i = 373760; i < height; i++)
-				reward -= .000061539;
-		}
+		//from C source code
+		if (height == 0)
+			return 4757066;
 
-		return reward;
+		if (height == 1)
+			return 5;
+
+		if (height > 2097152)
+			return 0;
+
+		height -= 1;
+		if (height < 1048576)
+			return height * .000056 + 5;
+		else
+			return (2097152 - height) * .000056 + 5;
+
 	}
 
 }

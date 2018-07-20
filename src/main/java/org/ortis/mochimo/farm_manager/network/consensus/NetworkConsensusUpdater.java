@@ -8,10 +8,9 @@ import org.ortis.mochimo.farm_manager.utils.Utils;
 
 /**
  * A {@link Runnable} for updating {@link NetworkConsensus}
- * @author Ortis
- *<br>
- *2018 Jul 08 10:28:13 PM 
- *<br>
+ * 
+ * @author Ortis <br>
+ *         2018 Jul 08 10:28:13 PM <br>
  */
 public class NetworkConsensusUpdater implements Runnable
 {
@@ -43,7 +42,18 @@ public class NetworkConsensusUpdater implements Runnable
 				final long start = System.currentTimeMillis();
 
 				this.log.fine("Updating network consensus");
-				this.networkConsensus.update();
+
+				try
+				{
+					this.networkConsensus.update();
+
+				} catch (final InterruptedException e)
+				{
+					throw e;
+				} catch (final Exception e)
+				{
+					this.log.severe("Error while updating network consensus - " + Utils.formatException(e));
+				}
 
 				final long elapsed = System.currentTimeMillis() - start;
 

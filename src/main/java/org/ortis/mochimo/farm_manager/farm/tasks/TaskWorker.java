@@ -39,7 +39,7 @@ public class TaskWorker implements Runnable
 	public void run()
 	{
 
-		this.log.info("Started");
+		this.log.fine("Started");
 		try
 		{
 			while (!Thread.interrupted())

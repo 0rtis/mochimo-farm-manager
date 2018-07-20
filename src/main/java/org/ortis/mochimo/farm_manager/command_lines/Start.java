@@ -208,9 +208,6 @@ public class Start implements Callable<Void>
 				return null;
 			}
 
-			final MiningFarm miningFarm = new MiningFarm(miningFarmConfig, Duration.ofSeconds(this.statHeartbeat), this.statParallelism, Duration.ofSeconds(this.watchDogHeartbeat),
-					this.watchDogParallelism, Duration.ofSeconds(this.consensusHeartbeat), clock, LogFactory.getLogger("farm"));
-
 			// http server
 			if (this.httpParallelism <= 0)
 			{
@@ -232,17 +229,27 @@ public class Start implements Callable<Void>
 				return null;
 			}
 
+			final MiningFarm miningFarm = new MiningFarm(miningFarmConfig, Duration.ofSeconds(this.statHeartbeat), this.statParallelism, Duration.ofSeconds(this.watchDogHeartbeat),
+					this.watchDogParallelism, Duration.ofSeconds(this.consensusHeartbeat), clock, LogFactory.getLogger("farm"));
+
+			// start httpd
 			final Host host = new Host(this.hostBind, 8888);
 
 			HttpServer httpServer = new HttpServer(new InetSocketAddress(host.getHostname(), host.getPort()), httpPool);
 			httpServer.addContext("/", new HttpRequestHandler(miningFarm, htmlPath, LogFactory.getLogger("HttpRequestHandler")));
 
-			// start farm & httpd
-			log.info("Starting farm");
-			miningFarm.start();
 			log.info("Starting http server");
 			httpServer.start();
 
+			
+			
+			// start farm
+			log.info("Starting farm");
+			Thread.sleep(3000);
+			miningFarm.start();
+
+			
+			
 		} catch (final Exception e)
 		{
 			log.severe(Utils.formatException(e));

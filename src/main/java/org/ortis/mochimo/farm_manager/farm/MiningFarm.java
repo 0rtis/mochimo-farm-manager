@@ -82,11 +82,11 @@ public class MiningFarm
 		for (final MinerConfig minerConfig : config.getMinerConfigs())
 		{
 			final FieldConfig cfid = minerConfig.get(MinerConfig.MINER_ID_LABEL);
-			final String id = cfid.getValue();
-			if (ids.contains(cfid.getValue()))
+			final String id = cfid.getValue().trim();
+			if (ids.contains(id))
 				throw new IllegalArgumentException("Duplicate miner id " + id);
 
-			ids.add(cfid.getValue());
+			ids.add(id);
 
 			this.log.fine("Building miner " + cfid.getValue());
 
